@@ -1,0 +1,2 @@
+# paxos
+Basic Paxos Algorithm
