@@ -3,6 +3,7 @@ import (
 	"fmt"  
 	"log"  
 	"net"  
+	"net/rpc"
 )
 type RPCRequest struct {  
 	NodeID   int  
@@ -14,6 +15,15 @@ type RPCResponse struct {
 	Message  string  
 	Data     []byte  
 }
+func (n *Node) WriteFile(fileName string, content string) error {
+    // Implement writing the file to this node and replicating it to other nodes using Paxos
+    return nil
+}
+
+func (n *Node) ReadFile(fileName string) (string, error) {
+    // Implement reading the file from this node
+    return n.Files[fileName].Data, nil
+}	
 func main() {  
 	// Establish connections to all nodes  
 	connections := make([]*net.TCPConn, 3)  
