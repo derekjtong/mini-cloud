@@ -43,6 +43,8 @@ func startClient() {
 		fmt.Printf("Error calling RPC method: %v\n", err)
 		os.Exit(1)
 	}
+
+	fmt.Printf("Reply: %+v\n", response)
 }
 
 func startServer() {
