@@ -2,85 +2,62 @@ package paxos
 
 import (
 	"fmt"
-	"math/rand"
 	"sync"
-	"time"
 )
 
+// Node represents a participant in the Paxos algorithm.
 type Node struct {
-	ID          int
-	Proposal    string
-	Accepted    bool
+	ID       int
+	Proposer *Proposer
+	Acceptor *Acceptor
+	Replicas []*Replica
+	mutex    sync.Mutex
 }
 
-func (n *Node) Prepare(proposal string) (string, bool) {
-	if !n.Accepted {
-		n.Proposal = proposal
-		return n.Proposal, true
-	}
-	return n.Proposal, false
+// Replica represents the value being replicated in the Paxos algorithm.
+type Replica struct {
+	Value string
 }
 
-func (n *Node) Accept(proposal string) bool {
-	if !n.Accepted {
-		n.Proposal = proposal
-		n.Accepted = true
-		return true
-	}
-	return false
+// Proposer represents the proposer in the Paxos algorithm.
+type Proposer struct {
+	Node *Node
 }
 
-func RunPaxos(nodes []*Node, proposal string) {
-	// Simulating Prepare phase
-	var wg sync.WaitGroup
-	for _, node := range nodes {
-		wg.Add(1)
-		go func(n *Node) {
-			defer wg.Done()
-			// Simulate network delay
-			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-			prop, ok := n.Prepare(proposal)
-			if ok {
-				fmt.Printf("Node %d prepared proposal: %s\n", n.ID, prop)
-			} else {
-				fmt.Printf("Node %d already accepted proposal: %s\n", n.ID, n.Proposal)
-			}
-		}(node)
-	}
-	wg.Wait()
+// Acceptor represents the acceptor in the Paxos algorithm.
+type Acceptor struct {
+	Node *Node
+}
 
-	// Simulating Accept phase
-	var acceptedProposal string
-	for _, node := range nodes {
-		if node.Proposal == proposal {
-			acceptedProposal = proposal
-			break
-		}
-	}
-	if acceptedProposal == proposal {
-		// Proposal was accepted by majority, proceed with the Accept phase
-		var acceptWg sync.WaitGroup
-		for _, node := range nodes {
-			acceptWg.Add(1)
-			go func(n *Node) {
-				defer acceptWg.Done()
-				// Simulate network delay
-				time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-				ok := n.Accept(acceptedProposal)
-				if ok {
-					fmt.Printf("Node %d accepted proposal: %s\n", n.ID, acceptedProposal)
-				} else {
-					fmt.Printf("Node %d already accepted proposal: %s\n", n.ID, n.Proposal)
-				}
-			}(node)
-		}
-		acceptWg.Wait()
-	}
+// Propose sends a proposal to the acceptors.
+func (p *Proposer) Propose(value string) {
+	p.Node.mutex.Lock()
+	defer p.Node.mutex.Unlock()
 
-	// After consensus, check the accepted proposal
-	for _, node := range nodes {
-		if node.Accepted {
-			fmt.Printf("Node %d has accepted proposal: %s\n", node.ID, node.Proposal)
-		}
+	// Logic for preparing and sending a proposal to acceptors
+	p.Node.Acceptor.Accept(value)
+}
+
+// Accept accepts a proposed value from a proposer.
+func (a *Acceptor) Accept(value string) {
+	a.Node.mutex.Lock()
+	defer a.Node.mutex.Unlock()
+
+	// Logic for accepting a proposal and updating the value
+	if a.Node.Replicas[0].Value == "" {
+		a.Node.Replicas[0].Value = value
+		fmt.Println("Accepted value:", value)
+	} else {
+		fmt.Println("Already accepted a value:", a.Node.Replicas[0].Value)
 	}
+}
+
+// SimulatePaxosScenarios simulates Paxos scenarios.
+func (n *Node) SimulatePaxosScenarios() {
+	// Single proposer scenario
+	n.Proposer.Propose("initial value")
+
+	// Two proposers scenario
+	n.Proposer.Propose("value A")
+	n.Proposer.Propose("value B")
 }
