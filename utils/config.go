@@ -9,7 +9,7 @@ type NodeConfig struct {
 }
 
 var NodeConfigs = []NodeConfig{
-	{NodeID: 1, IPAddress: "127.0.0.1", Port: 65432},
-	{NodeID: 2, IPAddress: "127.0.0.1", Port: 65431},
-	{NodeID: 3, IPAddress: "127.0.0.1", Port: 65430},
+	{NodeID: 1, IPAddress: "127.0.0.1", Port: 0},
+	{NodeID: 2, IPAddress: "127.0.0.1", Port: 0},
+	{NodeID: 3, IPAddress: "127.0.0.1", Port: 0},
 }
