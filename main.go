@@ -29,7 +29,7 @@ func startClient() {
 }
 
 func startServer() {
-	fmt.Printf("Starting server! Hint: to start client, add 'client' argument.\n\n")
+	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 	var wg sync.WaitGroup
 
 	for i, config := range utils.NodeConfigs {
