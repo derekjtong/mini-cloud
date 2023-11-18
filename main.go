@@ -5,11 +5,14 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/rpc"
 	"os"
 	"sync"
 
 	"github.com/derekjtong/paxos/node"
 	"github.com/derekjtong/paxos/utils"
+
+	MyRPC "github.com/derekjtong/paxos/rpc"
 )
 
 func main() {
@@ -28,6 +31,18 @@ func startClient() {
 	var Port int
 	fmt.Scanln(&Port)
 	fmt.Printf("Connecting to %s:%d...\n", IPAddress, Port)
+	client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", IPAddress, Port))
+	if err != nil {
+		fmt.Printf("Error dialing RPC server:%v\n", err)
+		os.Exit(1)
+	}
+	defer client.Close()
+	var request MyRPC.PingRequest
+	var response MyRPC.PingResponse
+	if err := client.Call("RPCServer.Ping", &request, &response); err != nil {
+		fmt.Printf("Error calling RPC method: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func startServer() {
