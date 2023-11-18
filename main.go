@@ -8,14 +8,13 @@ import (
 )
 
 func main() {
-	// Initialize nodes based on configuration specified in utils/config.go
 	for i, config := range utils.NodeConfigs {
 		// Start Goroutine
-		go func(config utils.NodeConfig) {
+		go func(i int, config utils.NodeConfig) {
 			fmt.Printf("Starting Node %d on %s:%d\n", i+1, config.IPAddress, config.Port)
 			node := node.NewNode(config.IPAddress, config.Port)
 			node.Start()
-		}(config)
+		}(i, config)
 	}
 
 	// Keep main function running to keep Goroutines running
