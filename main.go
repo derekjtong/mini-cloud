@@ -5,36 +5,33 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"sync"
 
 	"github.com/derekjtong/paxos/node"
 	"github.com/derekjtong/paxos/utils"
 )
 
-func findAvailablePort() (int, error) {
-	// Find a free port
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
+func main() {
+	if len(os.Args) > 1 && os.Args[1] == "client" {
+		startClient()
+	} else {
+		startServer()
 	}
-	defer listener.Close()
-
-	// Get the allocated port
-	address := listener.Addr().String()
-	_, portString, err := net.SplitHostPort(address)
-	if err != nil {
-		return 0, err
-	}
-
-	port, err := net.LookupPort("tcp", portString)
-	if err != nil {
-		return 0, err
-	}
-
-	return port, nil
 }
 
-func main() {
+func startClient() {
+	fmt.Print("Starting Client!\nNode IP address: (defaulting to 127.0.0.1)\n")
+	var IPAddress string = "127.0.0.1"
+	// fmt.Scanln(&IPAddress)
+	fmt.Print("Node port number: ")
+	var Port int
+	fmt.Scanln(&Port)
+	fmt.Printf("Connecting to %s:%d...\n", IPAddress, Port)
+}
+
+func startServer() {
+	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 	var wg sync.WaitGroup
 	var rpcWG sync.WaitGroup
 
@@ -73,4 +70,27 @@ func main() {
 
 	// All nodes and RPC servers have started
 	fmt.Println("All nodes and RPC servers have started.")
+}
+
+func findAvailablePort() (int, error) {
+	// Find a free port
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+
+	// Get the allocated port
+	address := listener.Addr().String()
+	_, portString, err := net.SplitHostPort(address)
+	if err != nil {
+		return 0, err
+	}
+
+	port, err := net.LookupPort("tcp", portString)
+	if err != nil {
+		return 0, err
+	}
+
+	return port, nil
 }
