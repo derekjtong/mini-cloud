@@ -1,3 +1,5 @@
+// main.go
+
 package main
 
 import (
@@ -34,8 +36,15 @@ func findAvailablePort() (int, error) {
 
 func main() {
 	var wg sync.WaitGroup
+	var rpcWG sync.WaitGroup
 
-	for i, config := range utils.NodeConfigs {
+	for _, config := range utils.NodeConfigs {
+		// Increment the main wait group for each node
+		wg.Add(1)
+
+		// Increment the RPC wait group for each node
+		rpcWG.Add(1)
+
 		// Dynamically find an available port
 		port, err := findAvailablePort()
 		if err != nil {
@@ -43,17 +52,25 @@ func main() {
 			return
 		}
 
-		// Start Goroutine
-		wg.Add(1)
-		go func(i int, config utils.NodeConfig, port int) {
+		// Start Goroutine for node
+		go func(config utils.NodeConfig, port int, wg *sync.WaitGroup, rpcWG *sync.WaitGroup) {
 			defer wg.Done()
 
-			fmt.Printf("Starting Node %d on %s:%d\n", i+1, config.IPAddress, port)
-			node := node.NewNode(config.IPAddress, port)
-			node.Start()
-		}(i, config, port)
+			fmt.Printf("[Node%d]: Starting on %s:%d\n", config.NodeID, config.IPAddress, port)
+			node := node.NewNode(config.NodeID, config.IPAddress, port)
+
+			// Start the node
+			node.Start(rpcWG)
+
+		}(config, port, &wg, &rpcWG)
 	}
 
-	// Wait for all Goroutines to finish
+	// Wait for all nodes to finish starting
 	wg.Wait()
+
+	// Signal that all RPC servers have started
+	rpcWG.Wait()
+
+	// All nodes and RPC servers have started
+	fmt.Println("All nodes and RPC servers have started.")
 }
