@@ -5,33 +5,36 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 	"sync"
 
 	"github.com/derekjtong/paxos/node"
 	"github.com/derekjtong/paxos/utils"
 )
 
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "client" {
-		startClient()
-	} else {
-		startServer()
+func findAvailablePort() (int, error) {
+	// Find a free port
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
 	}
+	defer listener.Close()
+
+	// Get the allocated port
+	address := listener.Addr().String()
+	_, portString, err := net.SplitHostPort(address)
+	if err != nil {
+		return 0, err
+	}
+
+	port, err := net.LookupPort("tcp", portString)
+	if err != nil {
+		return 0, err
+	}
+
+	return port, nil
 }
 
-func startClient() {
-	fmt.Print("Starting Client!\nNode IP address: (defaulting to 127.0.0.1)\n")
-	var IPAddress string = "127.0.0.1"
-	// fmt.Scanln(&IPAddress)
-	fmt.Print("Node port number: ")
-	var Port int
-	fmt.Scanln(&Port)
-	fmt.Printf("Connecting to %s:%d...\n", IPAddress, Port)
-}
-
-func startServer() {
-	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
+func main() {
 	var wg sync.WaitGroup
 	var rpcWG sync.WaitGroup
 
@@ -65,32 +68,6 @@ func startServer() {
 	// Wait for all nodes to finish starting
 	wg.Wait()
 
-	// Signal that all RPC servers have started
-	rpcWG.Wait()
-
-	// All nodes and RPC servers have started
-	fmt.Println("All nodes and RPC servers have started.")
-}
-
-func findAvailablePort() (int, error) {
-	// Find a free port
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	defer listener.Close()
-
-	// Get the allocated port
-	address := listener.Addr().String()
-	_, portString, err := net.SplitHostPort(address)
-	if err != nil {
-		return 0, err
-	}
-
-	port, err := net.LookupPort("tcp", portString)
-	if err != nil {
-		return 0, err
-	}
-
-	return port, nil
+	// Keep the main function running to keep the servers active
+	select {}
 }
