@@ -3,12 +3,20 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"sync"
 
 	"github.com/derekjtong/paxos/node"
 	"github.com/derekjtong/paxos/utils"
 )
 
+func main() {
+	if len(os.Args) > 1 && os.Args[1] == "client" {
+		startClient()
+	} else {
+		startServer()
+	}
+}
 func findAvailablePort() (int, error) {
 	// Find a free port
 	listener, err := net.Listen("tcp", ":0")
@@ -32,7 +40,8 @@ func findAvailablePort() (int, error) {
 	return port, nil
 }
 
-func main() {
+func startServer() {
+	fmt.Printf("Starting server! Hint: to start client, add 'client' argument.\n\n")
 	var wg sync.WaitGroup
 
 	for i, config := range utils.NodeConfigs {
@@ -56,4 +65,7 @@ func main() {
 
 	// Wait for all Goroutines to finish
 	wg.Wait()
+}
+func startClient() {
+	fmt.Printf("Starting Client!\n\n")
 }
