@@ -80,11 +80,8 @@ func startServer() {
 	// Wait for all nodes to finish starting
 	wg.Wait()
 
-	// Signal that all RPC servers have started
-	rpcWG.Wait()
-
-	// All nodes and RPC servers have started
-	fmt.Println("All nodes and RPC servers have started.")
+	// Keep the main function running to keep the servers active
+	select {}
 }
 
 func findAvailablePort() (int, error) {
