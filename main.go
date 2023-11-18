@@ -17,27 +17,15 @@ func main() {
 		startServer()
 	}
 }
-func findAvailablePort() (int, error) {
-	// Find a free port
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	defer listener.Close()
 
-	// Get the allocated port
-	address := listener.Addr().String()
-	_, portString, err := net.SplitHostPort(address)
-	if err != nil {
-		return 0, err
-	}
-
-	port, err := net.LookupPort("tcp", portString)
-	if err != nil {
-		return 0, err
-	}
-
-	return port, nil
+func startClient() {
+	fmt.Print("Starting Client!\nNode IP address: (defaulting to 127.0.0.1)\n")
+	var IPAddress string = "127.0.0.1"
+	// fmt.Scanln(&IPAddress)
+	fmt.Print("Node port number: ")
+	var Port int
+	fmt.Scanln(&Port)
+	fmt.Printf("Connecting to %s:%d...\n", IPAddress, Port)
 }
 
 func startServer() {
@@ -66,6 +54,26 @@ func startServer() {
 	// Wait for all Goroutines to finish
 	wg.Wait()
 }
-func startClient() {
-	fmt.Printf("Starting Client!\n\n")
+
+func findAvailablePort() (int, error) {
+	// Find a free port
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+
+	// Get the allocated port
+	address := listener.Addr().String()
+	_, portString, err := net.SplitHostPort(address)
+	if err != nil {
+		return 0, err
+	}
+
+	port, err := net.LookupPort("tcp", portString)
+	if err != nil {
+		return 0, err
+	}
+
+	return port, nil
 }
