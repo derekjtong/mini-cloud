@@ -75,7 +75,7 @@ func startServer() {
 		go func(config utils.NodeConfig, port int, wg *sync.WaitGroup, rpcWG *sync.WaitGroup) {
 			defer wg.Done()
 
-			fmt.Printf("[Node%d]: Starting on %s:%d\n", config.NodeID, config.IPAddress, port)
+			fmt.Printf("[Node %d]: Starting on %s:%d\n", config.NodeID, config.IPAddress, port)
 			node := node.NewNode(config.NodeID, config.IPAddress, port)
 
 			// Start the node
