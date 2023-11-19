@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/rpc"
 	"strconv"
-	"sync"
 )
 
 // RPCServer implementation
@@ -16,7 +15,6 @@ type RPCServer struct {
 	IPAddress string
 	Port      int
 	NodeID    int
-	wg        *sync.WaitGroup // Added a WaitGroup
 }
 
 type PingRequest struct{}
@@ -30,12 +28,11 @@ func (s *RPCServer) Ping(req *PingRequest, res *PingResponse) error {
 	return nil
 }
 
-func NewServer(nodeID int, ipAddress string, port int, wg *sync.WaitGroup) *RPCServer {
+func NewServer(nodeID int, ipAddress string, port int) *RPCServer {
 	return &RPCServer{
 		NodeID:    nodeID,
 		IPAddress: ipAddress,
 		Port:      port,
-		wg:        wg,
 	}
 }
 
@@ -58,9 +55,6 @@ func (s *RPCServer) Start() {
 		fmt.Printf("[Node %d]: Error registering RPC server: %v\n", s.NodeID, err)
 		return
 	}
-
-	// Signal that the RPC server has started
-	s.wg.Done()
 
 	rpcServer.Accept(listener)
 }
