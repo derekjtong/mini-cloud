@@ -12,8 +12,9 @@ import (
 // RPCServer implementation
 
 type RPCServer struct {
-	addr   string
-	NodeID int
+	addr          string
+	NodeID        int
+	NeighborNodes []string
 }
 
 type PingRequest struct{}
@@ -53,4 +54,20 @@ func (s *RPCServer) Start() {
 	}
 
 	rpcServer.Accept(listener)
+}
+
+func (s *RPCServer) AddNeighborNode(addr string) {
+	s.NeighborNodes = append(s.NeighborNodes, addr)
+	client, err := rpc.Dial("tcp", addr)
+	if err != nil {
+		fmt.Printf("Error dialing!")
+	}
+	defer client.Close()
+	var request PingRequest
+	var response PingResponse
+	if err := client.Call("RPCServer.Ping", &request, &response); err != nil {
+		fmt.Printf("Error calling RPC method: %v\n", err)
+	}
+
+	fmt.Printf("%+v. Connected!\n", response.Message)
 }

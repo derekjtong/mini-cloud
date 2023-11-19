@@ -55,7 +55,7 @@ func startClient() {
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 	var wg sync.WaitGroup
-	var NodeNeighbors []string
+	var nodeNeighbors []string
 	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
 		wg.Add(1)
 		port, err := findAvailablePort()
@@ -64,7 +64,7 @@ func startServer() {
 			return
 		}
 		addr := fmt.Sprintf("%s:%d", utils.IPAddress, port)
-		NodeNeighbors = append(NodeNeighbors, addr)
+		nodeNeighbors = append(nodeNeighbors, addr)
 		go func(ipAddress string, nodeID int, port int, wg *sync.WaitGroup) {
 			defer wg.Done()
 			fmt.Printf("[Node %d]: Starting on %s\n", nodeID, addr)
