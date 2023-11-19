@@ -12,9 +12,8 @@ import (
 // RPCServer implementation
 
 type RPCServer struct {
-	IPAddress string
-	Port      int
-	NodeID    int
+	addr   string
+	NodeID int
 }
 
 type PingRequest struct{}
@@ -28,26 +27,23 @@ func (s *RPCServer) Ping(req *PingRequest, res *PingResponse) error {
 	return nil
 }
 
-func NewServer(nodeID int, ipAddress string, port int) *RPCServer {
+func NewServer(nodeID int, addr string) *RPCServer {
 	return &RPCServer{
-		NodeID:    nodeID,
-		IPAddress: ipAddress,
-		Port:      port,
+		NodeID: nodeID,
+		addr:   addr,
 	}
 }
 
 func (s *RPCServer) Start() {
-	addr := fmt.Sprintf("%s:%d", s.IPAddress, s.Port)
-
-	listener, err := net.Listen("tcp", addr)
+	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
-		fmt.Printf("[Node %d]: Error starting RPC server on %s: %v\n", s.NodeID, addr, err)
+		fmt.Printf("[Node %d]: Error starting RPC server on %s: %v\n", s.NodeID, s.addr, err)
 		return
 	}
 
 	defer listener.Close()
 
-	fmt.Printf("[Node %d]: RPC server started on %s\n", s.NodeID, addr)
+	fmt.Printf("[Node %d]: RPC server started on %s\n", s.NodeID, s.addr)
 
 	rpcServer := rpc.NewServer()
 	err = rpcServer.Register(s)

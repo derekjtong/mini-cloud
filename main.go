@@ -24,7 +24,7 @@ func main() {
 }
 
 func startClient() {
-	fmt.Print("Starting Client!\nNode IP address: (defaulting to 127.0.0.1)\n")
+	fmt.Print("Starting Client!\n\nNode IP address: (defaulting to 127.0.0.1)\n")
 
 	var ipAddress string = "127.0.0.1"
 	// fmt.Scanln(&IPAddress)
@@ -55,22 +55,24 @@ func startClient() {
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 	var wg sync.WaitGroup
-
-	for nodeNumber := 1; nodeNumber <= utils.NodeCount; nodeNumber++ {
+	var NodeNeighbors []string
+	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
 		wg.Add(1)
 		port, err := findAvailablePort()
 		if err != nil {
 			fmt.Printf("Error finding available port: %v\n", err)
 			return
 		}
-		go func(ipAddress string, nodeNumber int, port int, wg *sync.WaitGroup) {
+		addr := fmt.Sprintf("%s:%d", utils.IPAddress, port)
+		NodeNeighbors = append(NodeNeighbors, addr)
+		go func(ipAddress string, nodeID int, port int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			fmt.Printf("[Node %d]: Starting on %s:%d\n", nodeNumber, ipAddress, port)
-			node := node.NewNode(nodeNumber, ipAddress, port)
+			fmt.Printf("[Node %d]: Starting on %s\n", nodeID, addr)
+			node := node.NewNode(nodeID, addr)
 			node.Start()
-		}(utils.IPAddress, nodeNumber, port, &wg)
+		}(utils.IPAddress, nodeID, port, &wg)
 	}
-
+	// Send NodeNeighbors to every node
 	wg.Wait()
 	select {}
 }
