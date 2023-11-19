@@ -55,51 +55,34 @@ func startClient() {
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 	var wg sync.WaitGroup
-	var rpcWG sync.WaitGroup
 
-	for _, config := range utils.NodeConfigs {
-		// Increment the main wait group for each node
+	for nodeNumber := 1; nodeNumber <= utils.NodeCount; nodeNumber++ {
 		wg.Add(1)
-
-		// Increment the RPC wait group for each node
-		rpcWG.Add(1)
-
-		// Dynamically find an available port
 		port, err := findAvailablePort()
 		if err != nil {
 			fmt.Printf("Error finding available port: %v\n", err)
 			return
 		}
-
-		// Start Goroutine for node
-		go func(config utils.NodeConfig, port int, wg *sync.WaitGroup, rpcWG *sync.WaitGroup) {
+		go func(ipAddress string, nodeNumber int, port int, wg *sync.WaitGroup) {
 			defer wg.Done()
-
-			fmt.Printf("[Node %d]: Starting on %s:%d\n", config.NodeID, config.IPAddress, port)
-			node := node.NewNode(config.NodeID, config.IPAddress, port)
-
-			// Start the node
-			node.Start(rpcWG)
-
-		}(config, port, &wg, &rpcWG)
+			fmt.Printf("[Node %d]: Starting on %s:%d\n", nodeNumber, ipAddress, port)
+			node := node.NewNode(nodeNumber, ipAddress, port)
+			node.Start()
+		}(utils.IPAddress, nodeNumber, port, &wg)
 	}
 
-	// Wait for all nodes to finish starting
 	wg.Wait()
-
-	// Keep the main function running to keep the servers active
 	select {}
 }
 
+// Find an available port
 func findAvailablePort() (int, error) {
-	// Find a free port
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return 0, err
 	}
 	defer listener.Close()
 
-	// Get the allocated port
 	address := listener.Addr().String()
 	_, portString, err := net.SplitHostPort(address)
 	if err != nil {
