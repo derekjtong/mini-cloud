@@ -4,7 +4,6 @@ package node
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/derekjtong/paxos/rpc"
 )
@@ -24,13 +23,10 @@ func NewNode(nodeID int, ipAddress string, port int) *Node {
 	}
 }
 
-func (n *Node) Start(rpcWG *sync.WaitGroup) {
+func (n *Node) Start() {
 	// Start the RPC server
-	n.rpcServer = rpc.NewServer(n.NodeID, n.IPAddress, n.Port, rpcWG)
+	n.rpcServer = rpc.NewServer(n.NodeID, n.IPAddress, n.Port)
 	go n.rpcServer.Start()
-
-	// Wait for the RPC server to start
-	rpcWG.Wait()
 
 	// Now, you can perform any additional initialization or start other components
 	// ...
