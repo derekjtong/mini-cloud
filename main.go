@@ -12,7 +12,7 @@ import (
 	"github.com/derekjtong/paxos/node"
 	"github.com/derekjtong/paxos/utils"
 
-	MyRPC "github.com/derekjtong/paxos/rpc"
+	myRPC "github.com/derekjtong/paxos/rpc"
 )
 
 func main() {
@@ -25,26 +25,31 @@ func main() {
 
 func startClient() {
 	fmt.Print("Starting Client!\nNode IP address: (defaulting to 127.0.0.1)\n")
-	var IPAddress string = "127.0.0.1"
+
+	var ipAddress string = "127.0.0.1"
 	// fmt.Scanln(&IPAddress)
+
 	fmt.Print("Node port number: ")
-	var Port int
-	fmt.Scanln(&Port)
-	fmt.Printf("Connecting to %s:%d...\n", IPAddress, Port)
-	client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", IPAddress, Port))
+	var port int
+	fmt.Scanln(&port)
+
+	fmt.Printf("Pinging %s:%d\n", ipAddress, port)
+	client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", ipAddress, port))
 	if err != nil {
-		fmt.Printf("Error dialing RPC server:%v\n", err)
+		fmt.Printf("Error dialing RPC server, please confirm port number.\n            (%v)\n", err)
 		os.Exit(1)
 	}
+
 	defer client.Close()
-	var request MyRPC.PingRequest
-	var response MyRPC.PingResponse
+
+	var request myRPC.PingRequest
+	var response myRPC.PingResponse
 	if err := client.Call("RPCServer.Ping", &request, &response); err != nil {
 		fmt.Printf("Error calling RPC method: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Reply: %+v\n", response)
+	fmt.Printf("%+v. Connected!\n", response.Message)
 }
 
 func startServer() {

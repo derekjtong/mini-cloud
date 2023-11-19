@@ -36,5 +36,5 @@ func (n *Node) Start(rpcWG *sync.WaitGroup) {
 	// ...
 
 	// Print the final message
-	fmt.Printf("[Node%d]: Started on %s:%d\n", n.NodeID, n.IPAddress, n.Port)
+	fmt.Printf("[Node %d]: Started on %s:%d\n", n.NodeID, n.IPAddress, n.Port)
 }
