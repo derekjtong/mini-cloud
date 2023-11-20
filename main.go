@@ -11,8 +11,6 @@ import (
 
 	"github.com/derekjtong/paxos/node"
 	"github.com/derekjtong/paxos/utils"
-
-	myRPC "github.com/derekjtong/paxos/rpc"
 )
 
 func main() {
@@ -42,9 +40,9 @@ func startClient() {
 
 	defer client.Close()
 
-	var request myRPC.PingRequest
-	var response myRPC.PingResponse
-	if err := client.Call("RPCServer.Ping", &request, &response); err != nil {
+	var request node.PingRequest
+	var response node.PingResponse
+	if err := client.Call("Node.Ping", &request, &response); err != nil {
 		fmt.Printf("Error calling RPC method: %v\n", err)
 		os.Exit(1)
 	}
@@ -73,6 +71,19 @@ func startServer() {
 		}(utils.IPAddress, nodeID, port, &wg)
 	}
 	// Send NodeNeighbors to every node
+	// for _, addr := range nodeNeighbors {
+	// client, err := rpc.Dial("tcp", addr)
+	// if err != nil {
+	// 	fmt.Printf("Error dialing node %s: %v\n", addr, err)
+	// 	continue
+	// }
+	// var setNeighborsRequest = myRPC.SetNeighborNodes{Neighbors: nodeNeighbors}
+	// var setNeighborsResponse myRpc.setNeighborsResponse
+	// if err := client.Call("Node.SetNeighborNodes", &setNeighborsRequest, &setNeighborsResponse); err != nil {
+	// 	fmt.Printf("Error setting neighbors for node %s: %v\n", addr, err)
+	// }
+	// client.Close()
+	// }
 	wg.Wait()
 	select {}
 }
