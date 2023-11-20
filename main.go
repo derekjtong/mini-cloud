@@ -48,7 +48,7 @@ func startClient() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Reply: %+v\n", response)
+	fmt.Printf("Reply: %+v\n", response.Message)
 }
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
@@ -62,12 +62,12 @@ func startServer() {
 			return
 		}
 		addr := fmt.Sprintf("%s:%d", utils.IPAddress, port)
-		go func(ipAddress string, nodeNumber int, port int, wg *sync.WaitGroup) {
+		go func(addr string, nodeNumber int, wg *sync.WaitGroup) {
 			defer wg.Done()
 			fmt.Printf("[Node %d]: Starting on %s\n", nodeNumber, addr)
 			node := node.NewNode(nodeNumber, addr)
 			node.Start()
-		}(utils.IPAddress, nodeID, port, &wg)
+		}(addr, nodeID, &wg)
 	}
 	// Send NodeNeighbors to every node
 	// for _, addr := range nodeNeighbors {
