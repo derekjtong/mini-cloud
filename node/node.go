@@ -119,7 +119,8 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	// RunPaxos()
 
 	filePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
@@ -128,6 +129,7 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	if err := encoder.Encode(req.Body); err != nil {
 		return err
 	}
+	fmt.Printf("[Node %d]: Wrote %s\n", n.NodeID, req.Body)
 	return nil
 }
 
@@ -154,6 +156,7 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 		return err
 	}
 
+	fmt.Printf("[Node %d]: Read %s\n", n.NodeID, data)
 	res.Data = data
 	return nil
 }
