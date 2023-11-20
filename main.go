@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/rpc"
 	"os"
-	"sync"
 
 	"github.com/derekjtong/paxos/node"
 	"github.com/derekjtong/paxos/utils"
@@ -52,22 +51,19 @@ func startClient() {
 }
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
-	var wg sync.WaitGroup
 
 	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
-		wg.Add(1)
 		port, err := findAvailablePort()
 		if err != nil {
 			fmt.Printf("Error finding available port: %v\n", err)
 			return
 		}
 		addr := fmt.Sprintf("%s:%d", utils.IPAddress, port)
-		go func(addr string, nodeNumber int, wg *sync.WaitGroup) {
-			defer wg.Done()
+		go func(addr string, nodeNumber int) {
 			fmt.Printf("[Node %d]: Starting on %s\n", nodeNumber, addr)
 			node := node.NewNode(nodeNumber, addr)
 			node.Start()
-		}(addr, nodeID, &wg)
+		}(addr, nodeID)
 	}
 	// Send NodeNeighbors to every node
 	// for _, addr := range nodeNeighbors {
@@ -83,8 +79,6 @@ func startServer() {
 	// }
 	// client.Close()
 	// }
-
-	wg.Wait()
 	select {}
 }
 
