@@ -96,63 +96,80 @@ func RunPaxos(nodes []*Node, proposal string) {
 	}
 }
 
-func SingleProposerScenario() {
-	// Scenario with a single proposer
-	nodes := []*Node{{ID: 1}, {ID: 2}, {ID: 3}}
-	proposal := "Single Proposer Scenario"
+func SingleProposerPaxos(nodes []*Node, proposal string) {
 	RunPaxos(nodes, proposal)
 }
 
-func TwoProposersScenario() {
-	// Scenario with two proposers (clients A and B)
-	nodes := []*Node{{ID: 1}, {ID: 2}}
-	proposal := "Two Proposers Scenario"
-	RunPaxos(nodes, proposal)
+func SimulateAWins(nodes []*Node, previousProposal string, newProposal string) {
+	SimulateAWinsWithPreviousValue(nodes, previousProposal, newProposal)
 }
 
-func TwoProposersAWinsScenario() {
-	// Scenario where A wins
-	nodeA := &Node{ID: 1}
-	nodeB := &Node{ID: 2}
-
-	// Simulate previous value already chosen by another node
-	nodeA.Accept("Previous value")
-
-	// Introduce random delays to simulate network effects
-	go func() {
-		time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-		nodeA.Propose("New Value from A")
-	}()
-
-	go func() {
-		time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-		nodeB.Propose("New Value from B")
-	}()
-
-	time.Sleep(500 * time.Millisecond) // Allow time for proposal and acceptance
-
-	nodes := []*Node{nodeA, nodeB}
-	RunPaxos(nodes, "New Value from A or B")
+func SimulateBWins(nodes []*Node, proposalA string, proposalB string, seePreviousValue bool) {
+	if seePreviousValue {
+		SimulateBWinsWithOlderValueSeen(nodes, proposalA, proposalB)
+	} else {
+		SimulateBWinsWithoutSeeingOlderValue(nodes, proposalA, proposalB)
+	}
 }
 
-func TwoProposersBWinsScenario() {
-	// Scenario where B wins
-	nodeA := &Node{ID: 1}
-	nodeB := &Node{ID: 2}
+func SimulateAWinsWithPreviousValue(nodes []*Node, previousProposal string, newProposal string) {
+	// Simulate the previous value being chosen
+	for _, node := range nodes {
+		node.Accepted = false
+		node.Proposal = previousProposal // Set the previous value
+	}
 
-	// Introduce random delays to simulate network effects
-	go func() {
-		time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-		nodeA.Propose("New Value from A")
-	}()
+	// Proposer finds the previous value and uses it
+	nodes[0].Prepare(newProposal)      // New proposer uses the previous value
+	nodes[0].Accept(nodes[0].Proposal) // New proposer accepts its proposal
 
-	go func() {
-		time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-		nodeB.Propose("New Value from B")
-	}()
+	fmt.Printf("Node %d accepted proposal: %s\n", nodes[0].ID, nodes[0].Proposal)
 
-	time.Sleep(500 * time.Millisecond) // Allow time for proposal and acceptance
+	// Check the accepted proposal after consensus
+	for _, node := range nodes {
+		if node.Accepted {
+			fmt.Printf("Node %d has accepted proposal: %s\n", node.ID, node.Proposal)
+		}
+	}
+}
 
-	nodes := []*Node{nodeA, nodeB}
-	RunPaxos(nodes, "New Value from A or B")
+func SimulateBWinsWithOlderValueSeen(nodes []*Node, proposalA string, proposalB string) {
+	// Simulate the previous value not being chosen
+	for _, node := range nodes {
+		node.Accepted = false
+	}
+
+	// Ensure proposalA is set first to simulate previous value not chosen
+	nodes[0].Prepare(proposalA)
+	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond) // Random delay for effect
+
+	// Proposer B sees the previous value and uses it
+	nodes[1].Prepare(nodes[0].Proposal) // B uses the previous value
+	nodes[1].Accept(nodes[1].Proposal)  // B accepts its proposal
+
+	fmt.Printf("Node %d accepted proposal: %s\n", nodes[1].ID, nodes[1].Proposal)
+
+	// Check the accepted proposal after consensus
+	for _, node := range nodes {
+		if node.Accepted {
+			fmt.Printf("Node %d has accepted proposal: %s\n", node.ID, node.Proposal)
+		}
+	}
+}
+
+func SimulateBWinsWithoutSeeingOlderValue(nodes []*Node, proposalA string, proposalB string) {
+	// Simulate the previous value not being chosen
+	for _, node := range nodes {
+		node.Accepted = false
+	}
+
+	// Ensure proposalA is set first to simulate previous value not chosen
+	nodes[0].Prepare(proposalA)
+	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond) // Random delay for effect
+
+	// Proposer B doesn't see the previous value and chooses its own value
+	nodes[1].Prepare(proposalB)
+	nodes[1].Accept(nodes[1].Proposal) // B accepts its proposal
+
+	fmt.Printf("Node %d accepted proposal: %s\n", nodes[1].ID, nodes[1].Proposal)
 }
