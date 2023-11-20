@@ -77,6 +77,7 @@ func startServer() {
 	var nodeAddrList []string
 	// Start 3 nodes
 	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
+		fmt.Printf("[SERVER]: Creating node %d...\n", nodeID)
 		port, err := findAvailablePort()
 		if err != nil {
 			fmt.Printf("Error finding available port: %v\n", err)
@@ -102,6 +103,7 @@ func startServer() {
 	}
 	// Send list of IP addresses to nodes
 	for _, nodeAddr := range nodeAddrList {
+		fmt.Printf("[SERVER]: RPC to set neighbors...\n")
 		client, err := rpc.Dial("tcp", nodeAddr)
 		if err != nil {
 			fmt.Printf("[SERVER] Error dialing node %s: %v\n", nodeAddr, err)

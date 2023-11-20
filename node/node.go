@@ -37,7 +37,7 @@ func (n *Node) Start() {
 		fmt.Printf("[Node %d]: Error creating file system directory: %v\n", n.NodeID, err)
 		return
 	}
-	fmt.Printf("[Node %d]: File system directory created at %s\n", n.NodeID, fsDir)
+	fmt.Printf("[Node %d]: Creating directory %s\n", n.NodeID, fsDir)
 
 	listener, err := net.Listen("tcp", n.addr)
 	if err != nil {
@@ -47,8 +47,6 @@ func (n *Node) Start() {
 
 	defer listener.Close()
 
-	fmt.Printf("[Node %d]: RPC server started on %s\n", n.NodeID, n.addr)
-
 	rpcServer := rpc.NewServer()
 	err = rpcServer.Register(n)
 	if err != nil {
@@ -56,8 +54,8 @@ func (n *Node) Start() {
 		return
 	}
 
+	fmt.Printf("[Node %d]: Starting RPC server on %s\n", n.NodeID, n.addr)
 	rpcServer.Accept(listener)
-	fmt.Printf("[Node %d]: Started on %s\n", n.NodeID, n.addr)
 }
 
 // Ping
@@ -84,7 +82,6 @@ type SetNeighborsResponse struct {
 // Update node's list of neighbors
 func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse) error {
 	n.NeighborNodes = req.Neighbors
-
 	for _, neighbor := range req.Neighbors {
 		// Check to not include node's own IP address
 		if neighbor != n.addr && n.rpcClients[neighbor] == nil {
@@ -96,7 +93,7 @@ func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse)
 			n.rpcClients[neighbor] = client
 		}
 	}
-	fmt.Printf("[Node %d]: New neighbors have been set successfully.\n", n.NodeID)
+	fmt.Printf("[Node %d]: Set neighbors\n", n.NodeID)
 	return nil
 }
 
