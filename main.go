@@ -55,6 +55,7 @@ func startServer() {
 
 	var nodeAddrList []string
 
+	// Start 3 nodes
 	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
 		port, err := findAvailablePort()
 		if err != nil {
@@ -65,15 +66,21 @@ func startServer() {
 		nodeAddrList = append(nodeAddrList, addr)
 		go func(addr string, nodeNumber int) {
 			fmt.Printf("[Node %d]: Starting on %s\n", nodeNumber, addr)
-			node := node.NewNode(nodeNumber, addr)
+			node, err := node.NewNode(nodeNumber, addr)
+			if err != nil {
+				fmt.Printf("Error creating node %d: %v", nodeID, err)
+				return
+			}
 			node.Start()
 		}(addr, nodeID)
+		// Wait until server is ready
 		err = waitForServerReady(addr)
 		if err != nil {
 			fmt.Printf("Error waiting for node %d to be ready: %v\n", nodeID, err)
 			return
 		}
 	}
+	// Send list of IP addresses to nodes
 	for _, nodeAddr := range nodeAddrList {
 		client, err := rpc.Dial("tcp", nodeAddr)
 		if err != nil {
@@ -90,22 +97,37 @@ func startServer() {
 	select {}
 }
 
+// Check server is ready
 func waitForServerReady(address string) error {
-	var client *rpc.Client
-	var err error
-	for {
-		client, err = rpc.Dial("tcp", address)
+	// Exponential backoff
+	var backoff time.Duration = 100
+	const maxBackoff = 5 * time.Second
+	const maxRetries = 10
+	var timeout time.Duration = 5 * time.Second
+	startTime := time.Now()
+
+	for retries := 0; retries < maxRetries; retries++ {
+		client, err := rpc.Dial("tcp", address)
 		if err == nil {
 			var req node.HealthCheckRequest
-			var resp node.HealthCheckResponse
-			err = client.Call("Node.HealthCheck", &req, &resp)
-			if err == nil && resp.Status == "OK" {
+			var res node.HealthCheckResponse
+			err = client.Call("Node.HealthCheck", &req, &res)
+			client.Close()
+			if err == nil && res.Status == "OK" {
 				return nil
 			}
-			client.Close()
 		}
-		time.Sleep(1 * time.Second)
+
+		if time.Since(startTime) > timeout {
+			return fmt.Errorf("server at %s did not become ready within %v", address, timeout)
+		}
+
+		if backoff < maxBackoff {
+			backoff *= 2
+		}
+		time.Sleep(backoff)
 	}
+	return fmt.Errorf("server at %s did not become ready afte %d attemps", address, maxRetries)
 }
 
 func findAvailablePort() (int, error) {
