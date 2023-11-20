@@ -129,12 +129,11 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	if err := encoder.Encode(req.Body); err != nil {
 		return err
 	}
-	fmt.Printf("[Node %d]: Wrote %s\n", n.NodeID, req.Body)
+	fmt.Printf("[Node %d]: WARNING, NO PAXOS. Wrote %s\n", n.NodeID, req.Body)
 	return nil
 }
 
 // ReadFile
-
 type ReadFileRequest struct {
 }
 
@@ -156,7 +155,7 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 		return err
 	}
 
-	fmt.Printf("[Node %d]: Read %s\n", n.NodeID, data)
+	fmt.Printf("[Node %d]: WARNING, NO PAXOS. Read %s\n", n.NodeID, data)
 	res.Data = data
 	return nil
 }
