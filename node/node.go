@@ -120,7 +120,7 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 
 	filePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
 	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666) // Overwrite
 	if err != nil {
 		return err
 	}
