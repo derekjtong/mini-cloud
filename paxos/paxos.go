@@ -119,9 +119,8 @@ func SimulateAWinsWithPreviousValue(nodes []*Node, previousProposal string, newP
 		node.Proposal = previousProposal // Set the previous value
 	}
 
-	// Proposer finds the previous value and uses it
-	nodes[0].Prepare(newProposal)      // New proposer uses the previous value
-	nodes[0].Accept(nodes[0].Proposal) // New proposer accepts its proposal
+	nodes[0].Prepare(newProposal)      
+	nodes[0].Accept(nodes[0].Proposal) 
 
 	fmt.Printf("Node %d accepted proposal: %s\n", nodes[0].ID, nodes[0].Proposal)
 
@@ -139,17 +138,14 @@ func SimulateBWinsWithOlderValueSeen(nodes []*Node, proposalA string, proposalB 
 		node.Accepted = false
 	}
 
-	// Ensure proposalA is set first to simulate previous value not chosen
 	nodes[0].Prepare(proposalA)
 	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond) // Random delay for effect
 
-	// Proposer B sees the previous value and uses it
-	nodes[1].Prepare(nodes[0].Proposal) // B uses the previous value
-	nodes[1].Accept(nodes[1].Proposal)  // B accepts its proposal
+	nodes[1].Prepare(nodes[0].Proposal) 
+	nodes[1].Accept(nodes[1].Proposal)  
 
 	fmt.Printf("Node %d accepted proposal: %s\n", nodes[1].ID, nodes[1].Proposal)
 
-	// Check the accepted proposal after consensus
 	for _, node := range nodes {
 		if node.Accepted {
 			fmt.Printf("Node %d has accepted proposal: %s\n", node.ID, node.Proposal)
@@ -163,13 +159,12 @@ func SimulateBWinsWithoutSeeingOlderValue(nodes []*Node, proposalA string, propo
 		node.Accepted = false
 	}
 
-	// Ensure proposalA is set first to simulate previous value not chosen
+	
 	nodes[0].Prepare(proposalA)
 	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond) // Random delay for effect
 
-	// Proposer B doesn't see the previous value and chooses its own value
 	nodes[1].Prepare(proposalB)
-	nodes[1].Accept(nodes[1].Proposal) // B accepts its proposal
+	nodes[1].Accept(nodes[1].Proposal) 
 
 	fmt.Printf("Node %d accepted proposal: %s\n", nodes[1].ID, nodes[1].Proposal)
 }
