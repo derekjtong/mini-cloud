@@ -16,11 +16,39 @@ type Node struct {
 	NeighborNodes []string
 }
 
-func NewNode(nodeID int, addr string) *Node {
-	return &Node{
-		NodeID: nodeID,
-		addr:   addr,
+func NewNode(nodeID int, addr string) (*Node, error) {
+	if addr == "" {
+		return nil, fmt.Errorf("address cannot be empty")
 	}
+	return &Node{
+		NodeID:        nodeID,
+		addr:          addr,
+		rpcClients:    make(map[string]*rpc.Client),
+		NeighborNodes: make([]string, 0),
+	}, nil
+}
+
+// Start
+func (n *Node) Start() {
+	listener, err := net.Listen("tcp", n.addr)
+	if err != nil {
+		fmt.Printf("[Node %d]: Error starting RPC server on %s: %v\n", n.NodeID, n.addr, err)
+		return
+	}
+
+	defer listener.Close()
+
+	fmt.Printf("[Node %d]: RPC server started on %s\n", n.NodeID, n.addr)
+
+	rpcServer := rpc.NewServer()
+	err = rpcServer.Register(n)
+	if err != nil {
+		fmt.Printf("[Node %d]: Error registering RPC server: %v\n", n.NodeID, err)
+		return
+	}
+
+	rpcServer.Accept(listener)
+	fmt.Printf("[Node %d]: Started on %s\n", n.NodeID, n.addr)
 }
 
 // Ping
@@ -42,12 +70,13 @@ type SetNeighborsRequest struct {
 type SetNeighborsResponse struct {
 }
 
+// Update node's list of neighbors
 func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse) error {
 	n.NeighborNodes = req.Neighbors
-	n.rpcClients = make(map[string]*rpc.Client)
 
 	for _, neighbor := range req.Neighbors {
-		if neighbor != n.addr {
+		// Check to not include node's own IP address
+		if neighbor != n.addr && n.rpcClients[neighbor] == nil {
 			client, err := rpc.Dial("tcp", neighbor)
 			if err != nil {
 				fmt.Printf("[Node %d]: Error connecting to neighbor at %s: %v\n", n.NodeID, neighbor, err)
@@ -56,7 +85,7 @@ func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse)
 			n.rpcClients[neighbor] = client
 		}
 	}
-	fmt.Printf("[Node %d]: Neighbors have been set successfully.\n", n.NodeID)
+	fmt.Printf("[Node %d]: New neighbors have been set successfully.\n", n.NodeID)
 	return nil
 }
 
@@ -83,27 +112,4 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 
 	// WriteToFile(req.Body)
 	return nil
-}
-
-// Start
-func (n *Node) Start() {
-	listener, err := net.Listen("tcp", n.addr)
-	if err != nil {
-		fmt.Printf("[Node %d]: Error starting RPC server on %s: %v\n", n.NodeID, n.addr, err)
-		return
-	}
-
-	defer listener.Close()
-
-	fmt.Printf("[Node %d]: RPC server started on %s\n", n.NodeID, n.addr)
-
-	rpcServer := rpc.NewServer()
-	err = rpcServer.Register(n)
-	if err != nil {
-		fmt.Printf("[Node %d]: Error registering RPC server: %v\n", n.NodeID, err)
-		return
-	}
-
-	rpcServer.Accept(listener)
-	fmt.Printf("[Node %d]: Started on %s\n", n.NodeID, n.addr)
 }
