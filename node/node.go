@@ -130,3 +130,30 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	}
 	return nil
 }
+
+// ReadFile
+
+type ReadFileRequest struct {
+}
+
+type ReadFileResponse struct {
+	Data string
+}
+
+func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
+	filePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	var data string
+	if err := decoder.Decode(&data); err != nil {
+		return err
+	}
+
+	res.Data = data
+	return nil
+}

@@ -244,6 +244,15 @@ func runCLI(client *rpc.Client) {
 			} else {
 				fmt.Println("Write operation successful")
 			}
+		case "read":
+			var readReq node.ReadFileRequest
+			var readRes node.ReadFileResponse
+			if err := client.Call("Node.ReadFile", &readReq, &readRes); err != nil {
+				fmt.Printf("Error calling ReadFile RPC method: %v\n", err)
+			} else {
+				fmt.Println("Data read from file:", readRes.Data)
+			}
+
 		default:
 			fmt.Println("Unknown command:", input)
 		}
