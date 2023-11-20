@@ -119,18 +119,13 @@ type WriteFileResponse struct {
 func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	// RunPaxos()
 
-	filePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
-	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666) // Overwrite
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(req.Body); err != nil {
+	// Write Locally
+	localFilePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
+	if err := n.writeFileToLocal(localFilePath, req.Body); err != nil {
 		return err
 	}
 
+	// Propagate
 	if !req.IsPropagated {
 		for _, neighbor := range n.NeighborNodes {
 			if neighbor == n.addr {
@@ -155,6 +150,20 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 
 	}
 	fmt.Printf("[Node %d]: WARNING, NO PAXOS. Wrote %s\n", n.NodeID, req.Body)
+	return nil
+}
+
+func (n *Node) writeFileToLocal(filePath, data string) error {
+	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666) // Overwrite
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(data); err != nil {
+		return err
+	}
 	return nil
 }
 
