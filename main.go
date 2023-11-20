@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"net/rpc"
@@ -48,7 +49,10 @@ func startClient() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Reply: %+v\n", response.Message)
+	// fmt.Printf("%v, connected!", response.Message)
+	fmt.Printf("Connected to node %v\n", response.NodeID)
+
+	runCLI(client)
 }
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
@@ -151,4 +155,34 @@ func findAvailablePort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func runCLI(client *rpc.Client) {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Enter commands (type 'exit' to quit):")
+
+	for {
+		fmt.Print("> ")
+		scanner.Scan()
+		input := scanner.Text()
+
+		if input == "exit" {
+			break
+		}
+
+		// Process commands
+		if input == "ping" {
+			var req node.PingRequest
+			var res node.PingResponse
+			if err := client.Call("Node.Ping", &req, &res); err != nil {
+				fmt.Printf("Error calling RPC method: %v\n", err)
+				continue
+			}
+			fmt.Println(res.Message)
+		} else if input == "message" {
+			fmt.Println("hi")
+		} else {
+			fmt.Println("Unknown command:", input)
+		}
+	}
 }

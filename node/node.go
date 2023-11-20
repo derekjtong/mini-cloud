@@ -3,9 +3,11 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/rpc"
+	"os"
 	"strconv"
 )
 
@@ -30,6 +32,13 @@ func NewNode(nodeID int, addr string) (*Node, error) {
 
 // Start
 func (n *Node) Start() {
+	fsDir := fmt.Sprintf("./node_data/node_data_%s", n.addr)
+	if err := os.MkdirAll(fsDir, 0755); err != nil {
+		fmt.Printf("[Node %d]: Error creating file system directory: %v\n", n.NodeID, err)
+		return
+	}
+	fmt.Printf("[Node %d]: File system directory created at %s\n", n.NodeID, fsDir)
+
 	listener, err := net.Listen("tcp", n.addr)
 	if err != nil {
 		fmt.Printf("[Node %d]: Error starting RPC server on %s: %v\n", n.NodeID, n.addr, err)
@@ -55,11 +64,13 @@ func (n *Node) Start() {
 type PingRequest struct{}
 type PingResponse struct {
 	Message string
+	NodeID  int
 }
 
 func (n *Node) Ping(req *PingRequest, res *PingResponse) error {
 	fmt.Printf("[Node %d]: Pinged\n", n.NodeID)
 	res.Message = "Pong from node " + strconv.Itoa(n.NodeID)
+	res.NodeID = n.NodeID
 	return nil
 }
 
@@ -110,6 +121,15 @@ type WriteFileResponse struct {
 func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	// RunPaxos()
 
-	// WriteToFile(req.Body)
+	filePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(req.Body); err != nil {
+		return err
+	}
 	return nil
 }
