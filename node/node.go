@@ -71,6 +71,21 @@ func (n *Node) HealthCheck(req *HealthCheckRequest, res *HealthCheckResponse) er
 	return nil
 }
 
+// WriteFile
+type WriteFileRequest struct {
+	Body string
+}
+type WriteFileResponse struct {
+}
+
+func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
+	// RunPaxos()
+
+	// WriteToFile(req.Body)
+	return nil
+}
+
+// Start
 func (n *Node) Start() {
 	listener, err := net.Listen("tcp", n.addr)
 	if err != nil {
