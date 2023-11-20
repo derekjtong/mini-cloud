@@ -110,7 +110,8 @@ func (n *Node) HealthCheck(req *HealthCheckRequest, res *HealthCheckResponse) er
 
 // WriteFile
 type WriteFileRequest struct {
-	Body string
+	Body         string
+	IsPropagated bool
 }
 type WriteFileResponse struct {
 }
@@ -128,6 +129,30 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	encoder := json.NewEncoder(file)
 	if err := encoder.Encode(req.Body); err != nil {
 		return err
+	}
+
+	if !req.IsPropagated {
+		for _, neighbor := range n.NeighborNodes {
+			if neighbor == n.addr {
+				continue // Skip self
+			}
+			client, ok := n.rpcClients[neighbor]
+			if !ok {
+				var err error
+				client, err = rpc.Dial("tcp", neighbor)
+				if err != nil {
+					fmt.Printf("[Node %d]: Error connecting to neighbor at %s: %v\n", n.NodeID, neighbor, err)
+					continue
+				}
+				n.rpcClients[neighbor] = client
+			}
+			propagatedReq := WriteFileRequest{Body: req.Body, IsPropagated: true}
+			var neighborRes WriteFileResponse
+			if err := client.Call("Node.WriteFile", &propagatedReq, &neighborRes); err != nil {
+				fmt.Printf("[Node %d]: Error writing to neighbor at %s: %v\n", n.NodeID, neighbor, err)
+			}
+		}
+
 	}
 	fmt.Printf("[Node %d]: WARNING, NO PAXOS. Wrote %s\n", n.NodeID, req.Body)
 	return nil
