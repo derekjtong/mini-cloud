@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"time"
 
 	"github.com/derekjtong/paxos/node"
 	"github.com/derekjtong/paxos/utils"
@@ -67,6 +68,11 @@ func startServer() {
 			node := node.NewNode(nodeNumber, addr)
 			node.Start()
 		}(addr, nodeID)
+		err = waitForServerReady(addr)
+		if err != nil {
+			fmt.Printf("Error waiting for node %d to be ready: %v\n", nodeID, err)
+			return
+		}
 	}
 	for _, nodeAddr := range nodeAddrList {
 		client, err := rpc.Dial("tcp", nodeAddr)
@@ -82,6 +88,24 @@ func startServer() {
 		client.Close()
 	}
 	select {}
+}
+
+func waitForServerReady(address string) error {
+	var client *rpc.Client
+	var err error
+	for {
+		client, err = rpc.Dial("tcp", address)
+		if err == nil {
+			var req node.HealthCheckRequest
+			var resp node.HealthCheckResponse
+			err = client.Call("Node.HealthCheck", &req, &resp)
+			if err == nil && resp.Status == "OK" {
+				return nil
+			}
+			client.Close()
+		}
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func findAvailablePort() (int, error) {

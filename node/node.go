@@ -58,6 +58,17 @@ func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse)
 	return nil
 }
 
+// Health Check
+type HealthCheckRequest struct{}
+type HealthCheckResponse struct {
+	Status string
+}
+
+func (n *Node) HealthCheck(req *HealthCheckRequest, res *HealthCheckResponse) error {
+	res.Status = "OK"
+	return nil
+}
+
 func (n *Node) Start() {
 	listener, err := net.Listen("tcp", n.addr)
 	if err != nil {
