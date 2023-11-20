@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/derekjtong/paxos/node"
@@ -170,8 +171,16 @@ func runCLI(client *rpc.Client) {
 			break
 		}
 
+		parts := strings.SplitN(input, " ", 2)
+		command := parts[0]
+		var argument string
+		if len(parts) > 1 {
+			argument = parts[1]
+		}
+
 		// Process commands
-		if input == "ping" {
+		switch command {
+		case "ping":
 			var req node.PingRequest
 			var res node.PingResponse
 			if err := client.Call("Node.Ping", &req, &res); err != nil {
@@ -179,9 +188,20 @@ func runCLI(client *rpc.Client) {
 				continue
 			}
 			fmt.Println(res.Message)
-		} else if input == "message" {
-			fmt.Println("hi")
-		} else {
+		case "write":
+			if argument == "" {
+				fmt.Println("Please provide a string to write")
+				continue
+			}
+			var req node.WriteFileRequest
+			var res node.WriteFileResponse
+			req.Body = argument
+			if err := client.Call("Node.WriteFile", &req, &res); err != nil {
+				fmt.Printf("Error calling RPC method: %v\n", err)
+			} else {
+				fmt.Println("Write operation successful")
+			}
+		default:
 			fmt.Println("Unknown command:", input)
 		}
 	}
