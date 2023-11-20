@@ -4,50 +4,58 @@ package node
 
 import (
 	"fmt"
+	"net"
 	"net/rpc"
-
-	myRPC "github.com/derekjtong/paxos/rpc"
+	"strconv"
 )
 
 type Node struct {
-	Address       string
+	addr          string
 	NodeID        int
-	rpcServer     *myRPC.RPCServer
+	rpcClients    map[string]*rpc.Client
 	NeighborNodes []string
 }
 
 func NewNode(nodeID int, addr string) *Node {
 	return &Node{
-		NodeID:  nodeID,
-		Address: addr,
+		NodeID: nodeID,
+		addr:   addr,
 	}
 }
 
-func (n *Node) AddNeighborNode(addr string) error {
-	n.NeighborNodes = append(n.NeighborNodes, addr)
-	client, err := rpc.Dial("tcp", addr)
-	if err != nil {
-		return fmt.Errorf("error dialing %s: %v", addr, err)
-	}
-	defer client.Close()
-	var request myRPC.PingRequest
-	var response myRPC.PingResponse
-	if err := client.Call("RPCServer.Ping", &request, &response); err != nil {
-		return fmt.Errorf("error calling RPC method on %s: %v", addr, err)
-	}
+func (n *Node) SetNeighborNodes(neighbors []string) error {
+	return nil
+}
 
-	fmt.Printf("%+v. Connected!\n", response.Message)
+type PingRequest struct{}
+type PingResponse struct {
+	Message string
+}
+
+func (n *Node) Ping(req *PingRequest, res *PingResponse) error {
+	fmt.Printf("[Node %d]: Pinged\n", n.NodeID)
+	res.Message = "Pong from node " + strconv.Itoa(n.NodeID)
 	return nil
 }
 
 func (n *Node) Start() {
-	// Start the RPC server
-	n.rpcServer = myRPC.NewServer(n.NodeID, n.Address)
-	go n.rpcServer.Start()
+	listener, err := net.Listen("tcp", n.addr)
+	if err != nil {
+		fmt.Printf("[Node %d]: Error starting RPC server on %s: %v\n", n.NodeID, n.addr, err)
+		return
+	}
 
-	// Now, you can perform any additional initialization or start other components
-	// ...
+	defer listener.Close()
 
-	// Print the final message
-	fmt.Printf("[Node %d]: Started on %s\n", n.NodeID, n.Address)
+	fmt.Printf("[Node %d]: RPC server started on %s\n", n.NodeID, n.addr)
+
+	rpcServer := rpc.NewServer()
+	err = rpcServer.Register(n)
+	if err != nil {
+		fmt.Printf("[Node %d]: Error registering RPC server: %v\n", n.NodeID, err)
+		return
+	}
+
+	rpcServer.Accept(listener)
+	fmt.Printf("[Node %d]: Started on %s\n", n.NodeID, n.addr)
 }
