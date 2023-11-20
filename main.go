@@ -50,37 +50,24 @@ func startClient() {
 
 	fmt.Printf("Reply: %+v\n", response)
 }
-
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 	var wg sync.WaitGroup
-	var rpcWG sync.WaitGroup
 
-	for _, config := range utils.NodeConfigs {
-		// Increment the main wait group for each node
+	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
 		wg.Add(1)
-
-		// Increment the RPC wait group for each node
-		rpcWG.Add(1)
-
-		// Dynamically find an available port
 		port, err := findAvailablePort()
 		if err != nil {
 			fmt.Printf("Error finding available port: %v\n", err)
 			return
 		}
-
-		// Start Goroutine for node
-		go func(config utils.NodeConfig, port int, wg *sync.WaitGroup, rpcWG *sync.WaitGroup) {
+		addr := fmt.Sprintf("%s:%d", utils.IPAddress, port)
+		go func(ipAddress string, nodeNumber int, port int, wg *sync.WaitGroup) {
 			defer wg.Done()
-
-			fmt.Printf("[Node%d]: Starting on %s:%d\n", config.NodeID, config.IPAddress, port)
-			node := node.NewNode(config.NodeID, config.IPAddress, port)
-
-			// Start the node
-			node.Start(rpcWG)
-
-		}(config, port, &wg, &rpcWG)
+			fmt.Printf("[Node %d]: Starting on %s\n", nodeNumber, addr)
+			node := node.NewNode(nodeNumber, addr)
+			node.Start()
+		}(utils.IPAddress, nodeID, port, &wg)
 	}
 	// Send NodeNeighbors to every node
 	// for _, addr := range nodeNeighbors {
@@ -96,9 +83,8 @@ func startServer() {
 	// }
 	// client.Close()
 	// }
-	wg.Wait()
 
-	// Keep the main function running to keep the servers active
+	wg.Wait()
 	select {}
 }
 
