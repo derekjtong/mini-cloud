@@ -47,12 +47,14 @@ func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse)
 	n.rpcClients = make(map[string]*rpc.Client)
 
 	for _, neighbor := range req.Neighbors {
-		client, err := rpc.Dial("tcp", neighbor)
-		if err != nil {
-			fmt.Printf("[Node %d]: Error connecting to neighbor at %s: %v\n", n.NodeID, neighbor, err)
-			continue
+		if neighbor != n.addr {
+			client, err := rpc.Dial("tcp", neighbor)
+			if err != nil {
+				fmt.Printf("[Node %d]: Error connecting to neighbor at %s: %v\n", n.NodeID, neighbor, err)
+				continue
+			}
+			n.rpcClients[neighbor] = client
 		}
-		n.rpcClients[neighbor] = client
 	}
 	fmt.Printf("[Node %d]: Neighbors have been set successfully.\n", n.NodeID)
 	return nil
