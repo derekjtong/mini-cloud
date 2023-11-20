@@ -23,10 +23,7 @@ func NewNode(nodeID int, addr string) *Node {
 	}
 }
 
-func (n *Node) SetNeighborNodes(neighbors []string) error {
-	return nil
-}
-
+// Ping
 type PingRequest struct{}
 type PingResponse struct {
 	Message string
@@ -35,6 +32,29 @@ type PingResponse struct {
 func (n *Node) Ping(req *PingRequest, res *PingResponse) error {
 	fmt.Printf("[Node %d]: Pinged\n", n.NodeID)
 	res.Message = "Pong from node " + strconv.Itoa(n.NodeID)
+	return nil
+}
+
+// SetNeighbors
+type SetNeighborsRequest struct {
+	Neighbors []string
+}
+type SetNeighborsResponse struct {
+}
+
+func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse) error {
+	n.NeighborNodes = req.Neighbors
+	n.rpcClients = make(map[string]*rpc.Client)
+
+	for _, neighbor := range req.Neighbors {
+		client, err := rpc.Dial("tcp", neighbor)
+		if err != nil {
+			fmt.Printf("[Node %d]: Error connecting to neighbor at %s: %v\n", n.NodeID, neighbor, err)
+			continue
+		}
+		n.rpcClients[neighbor] = client
+	}
+	fmt.Printf("[Node %d]: Neighbors have been set successfully.\n", n.NodeID)
 	return nil
 }
 

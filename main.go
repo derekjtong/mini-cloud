@@ -52,6 +52,8 @@ func startClient() {
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 
+	var nodeAddrList []string
+
 	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
 		port, err := findAvailablePort()
 		if err != nil {
@@ -59,26 +61,26 @@ func startServer() {
 			return
 		}
 		addr := fmt.Sprintf("%s:%d", utils.IPAddress, port)
+		nodeAddrList = append(nodeAddrList, addr)
 		go func(addr string, nodeNumber int) {
 			fmt.Printf("[Node %d]: Starting on %s\n", nodeNumber, addr)
 			node := node.NewNode(nodeNumber, addr)
 			node.Start()
 		}(addr, nodeID)
 	}
-	// Send NodeNeighbors to every node
-	// for _, addr := range nodeNeighbors {
-	// client, err := rpc.Dial("tcp", addr)
-	// if err != nil {
-	// 	fmt.Printf("Error dialing node %s: %v\n", addr, err)
-	// 	continue
-	// }
-	// var setNeighborsRequest = myRPC.SetNeighborNodes{Neighbors: nodeNeighbors}
-	// var setNeighborsResponse myRpc.setNeighborsResponse
-	// if err := client.Call("Node.SetNeighborNodes", &setNeighborsRequest, &setNeighborsResponse); err != nil {
-	// 	fmt.Printf("Error setting neighbors for node %s: %v\n", addr, err)
-	// }
-	// client.Close()
-	// }
+	for _, nodeAddr := range nodeAddrList {
+		client, err := rpc.Dial("tcp", nodeAddr)
+		if err != nil {
+			fmt.Printf("[SERVER] Error dialing node %s: %v\n", nodeAddr, err)
+			continue
+		}
+		var setNeighborsRequest = node.SetNeighborsRequest{Neighbors: nodeAddrList}
+		var setNeighborsResponse node.SetNeighborsResponse
+		if err := client.Call("Node.SetNeighbors", &setNeighborsRequest, &setNeighborsResponse); err != nil {
+			fmt.Printf("Error setting neighbors for node %s: %v\n", nodeAddr, err)
+		}
+		client.Close()
+	}
 	select {}
 }
 
