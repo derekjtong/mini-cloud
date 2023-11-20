@@ -5,6 +5,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"net/rpc"
 	"os"
@@ -58,8 +59,22 @@ func startClient() {
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 
-	var nodeAddrList []string
+	if utils.CheckNodeData {
+		const nodeDataDir = "./node_data"
+		exists, isEmpty, err := checkDirStatus(nodeDataDir)
+		if err != nil {
+			fmt.Printf("Error checking node_data directory: %v\n", err)
+			return
+		}
 
+		if exists && !isEmpty {
+			fmt.Println("Warning: node_data directory is not empty. Continuing may lead to unexpected behavior.")
+			fmt.Println("Press 'Enter' to continue or Ctrl+C to abort.")
+			bufio.NewReader(os.Stdin).ReadBytes('\n')
+		}
+	}
+
+	var nodeAddrList []string
 	// Start 3 nodes
 	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
 		port, err := findAvailablePort()
@@ -156,6 +171,32 @@ func findAvailablePort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func checkDirStatus(dir string) (exists bool, isEmpty bool, err error) {
+	f, err := os.Open(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Directory does not exist
+			return false, true, nil
+		}
+		// Some other error occurred while opening the directory
+		return false, false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1) // Try to read one entry
+	if err == io.EOF {
+		// Directory exists and is empty
+		return true, true, nil
+	}
+	if err != nil {
+		// Some other error occurred while reading the directory
+		return true, false, err
+	}
+
+	// Directory exists and is not empty
+	return true, false, nil
 }
 
 func runCLI(client *rpc.Client) {
