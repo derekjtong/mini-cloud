@@ -197,6 +197,6 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 }
 
 func (n *Node) RunPaxos(value string) {
-	paxosinstance := paxos.NewProposer(1, n.rpcClients)
+	paxosinstance := paxos.NewProposer(1, n.rpcClients) 
 	paxosinstance.Propose(value)
 }
