@@ -1,5 +1,5 @@
-# paxos
-Basic Paxos Algorithm
+# Mini Cloud
+Distributed file system that maintains consistency using Paxos algorithm.
 
 ## Usage
 
