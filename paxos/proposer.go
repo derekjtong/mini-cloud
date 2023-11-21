@@ -66,14 +66,19 @@ func (p *Proposer) Propose(value string) error {
 }
 
 func (p *Proposer) sendPrepareRequest(acceptor *rpc.Client, proposalNumber int) (*PrepareResponse, error) {
-	request := PrepareRequest{Proposal: proposalNumber}
+	request := PrepareRequest{
+        Proposal: proposalNumber,
+    }
 	var response PrepareResponse
 	err := acceptor.Call("Acceptor.Prepare", request, &response)
 	return &response, err
 }
 
 func (p *Proposer) sendAcceptRequest(acceptor *rpc.Client, proposalNumber int, value string) (*AcceptResponse, error) {
-	request := AcceptRequest{Proposal: proposalNumber, Value: value}
+	request := AcceptRequest{
+        Proposal: proposalNumber,
+        Value: value,
+    }
 	var response AcceptResponse
 	err := acceptor.Call("Acceptor.Accept", request, &response)
 	return &response, err
