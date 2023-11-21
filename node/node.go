@@ -9,6 +9,8 @@ import (
 	"net/rpc"
 	"os"
 	"strconv"
+
+	"github.com/derekjtong/paxos/paxos"
 )
 
 type Node struct {
@@ -117,7 +119,7 @@ type WriteFileResponse struct {
 }
 
 func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
-	// RunPaxos()
+	n.RunPaxos(req.Body)
 
 	// Write Locally
 	localFilePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
@@ -192,4 +194,9 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 	fmt.Printf("[Node %d]: WARNING, NO PAXOS. Read %s\n", n.NodeID, data)
 	res.Data = data
 	return nil
+}
+
+func (n *Node) RunPaxos(value string) {
+	paxosinstance := paxos.NewProposer(1, n.rpcClients)
+	paxosinstance.Propose(value)
 }
