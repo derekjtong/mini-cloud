@@ -1,3 +1,3 @@
-package paxos
+package node
 
 // File system implementation
