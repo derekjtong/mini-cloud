@@ -170,7 +170,7 @@ type ReadFileResponse struct {
 }
 
 func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
-	filePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
+	filePath := fmt.Sprintf("./node_data/node_data_%s.json", n.addr)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 		return err
 	}
 
-	fmt.Printf("[Node %d]: WARNING, NO PAXOS. Read %s\n", n.NodeID, data)
+	fmt.Printf("[Node %d]: Read %s\n", n.NodeID, data)
 	res.Data = data
 	return nil
 }
