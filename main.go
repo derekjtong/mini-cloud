@@ -56,6 +56,7 @@ func startClient() {
 
 	runCLI(client)
 }
+
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 
