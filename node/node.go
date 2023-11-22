@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/derekjtong/paxos/paxos"
+	"github.com/derekjtong/paxos/utils"
 )
 
 type Node struct {
@@ -45,7 +46,9 @@ func (n *Node) Start() {
 		fmt.Printf("[Node %d]: Error creating file system directory: %v\n", n.NodeID, err)
 		return
 	}
-	fmt.Printf("[Node %d]: Creating directory %s\n", n.NodeID, fsDir)
+	if !utils.MinimalStartUpLogging {
+		fmt.Printf("[Node %d]: Creating directory %s\n", n.NodeID, fsDir)
+	}
 
 	listener, err := net.Listen("tcp", n.addr)
 	if err != nil {
@@ -61,8 +64,9 @@ func (n *Node) Start() {
 		fmt.Printf("[Node %d]: Error registering RPC server: %v\n", n.NodeID, err)
 		return
 	}
-
-	fmt.Printf("[Node %d]: Starting RPC server on %s\n", n.NodeID, n.addr)
+	if !utils.MinimalStartUpLogging {
+		fmt.Printf("[Node %d]: Starting RPC server on %s\n", n.NodeID, n.addr)
+	}
 	rpcServer.Accept(listener)
 }
 

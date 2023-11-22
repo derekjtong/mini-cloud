@@ -62,30 +62,22 @@ func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 
 	if utils.ClearNodeDataOnStart {
-		fmt.Println("Clearing node_data directory...")
+		fmt.Println("[SERVER]: Clearing node_data directory...")
 		if err := clearDir("./node_data"); err != nil {
 			fmt.Printf("Error clearing node_data directory: %v\n", err)
 			return
 		}
-	} else if utils.CheckNodeData {
-		const nodeDataDir = "./node_data"
-		exists, isEmpty, err := checkDirStatus(nodeDataDir)
-		if err != nil {
-			fmt.Printf("Error checking node_data directory: %v\n", err)
-			return
-		}
-
-		if exists && !isEmpty {
-			fmt.Println("Warning: node_data directory is not empty. Continuing may lead to unexpected behavior.")
-			fmt.Println("Press 'Enter' to continue or Ctrl+C to abort.")
-			bufio.NewReader(os.Stdin).ReadBytes('\n')
-		}
 	}
 
 	var nodeAddrList []string
-	// Start 3 nodes
+	// Start nodes
+	if utils.MinimalStartUpLogging {
+		fmt.Printf("[SERVER]: Starting nodes\n")
+	}
 	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
-		fmt.Printf("[SERVER]: Creating node %d...\n", nodeID)
+		if !utils.MinimalStartUpLogging {
+			fmt.Printf("[SERVER]: Creating node %d...\n", nodeID)
+		}
 		port, err := findAvailablePort()
 		if err != nil {
 			fmt.Printf("Error finding available port: %v\n", err)
@@ -110,8 +102,13 @@ func startServer() {
 		}
 	}
 	// Send list of IP addresses to nodes
+	if utils.MinimalStartUpLogging {
+		fmt.Printf("[SERVER]: Sending list of node IP addresses to each node\n")
+	}
 	for _, nodeAddr := range nodeAddrList {
-		fmt.Printf("[SERVER]: RPC to set neighbors...\n")
+		if !utils.MinimalStartUpLogging {
+			fmt.Printf("[SERVER]: RPC to set neighbors...\n")
+		}
 		client, err := rpc.Dial("tcp", nodeAddr)
 		if err != nil {
 			fmt.Printf("[SERVER] Error dialing node %s: %v\n", nodeAddr, err)
