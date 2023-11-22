@@ -10,11 +10,11 @@ type Proposer struct {
 	id             int
 	proposalNumber int
 	value          string
-	acceptors      []*rpc.Client // Given from node.go
+	acceptors      map[string]*rpc.Client // Given from node.go
 	mu             sync.Mutex
 }
 
-func NewProposer(id int, acceptors []*rpc.Client) *Proposer {
+func NewProposer(id int, acceptors map[string]*rpc.Client) *Proposer {
 	return &Proposer{
 		id:        id,
 		acceptors: acceptors,
