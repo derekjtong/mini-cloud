@@ -45,8 +45,7 @@ func (p *Proposer) Propose(value string) error {
 		if response.OK {
 			receivedPromises++
 			if response.Proposal > p.HighestAcceptedProposalNumber {
-				fmt.Printf("CHANGED ACCEPTED VALUE FROM '%s' TO '%s'\n", p.HighestAcceptedValue, response.AcceptedValue)
-				fmt.Printf("%d > %d\n", response.Proposal, p.HighestAcceptedProposalNumber)
+				fmt.Printf("--HIGHER ACCEPTED PROPOSAL DETECTED (%d > %d) - Changing accepted value from '%s' to '%s'\n", response.Proposal, p.HighestAcceptedProposalNumber, p.HighestAcceptedValue, response.AcceptedValue)
 				p.HighestAcceptedProposalNumber = response.Proposal
 				p.HighestAcceptedValue = response.AcceptedValue
 			}
@@ -54,17 +53,18 @@ func (p *Proposer) Propose(value string) error {
 	}
 	if p.HighestAcceptedProposalNumber != -1 && p.HighestAcceptedValue != "" {
 		// Use the highest accepted value from the prepare phase
-		fmt.Printf("send new value - CHANGING VALUE FROM '%s' TO '%s'\n", p.Value, p.HighestAcceptedValue)
+		fmt.Printf("--SENDING NEW VALUE - Changing send value from '%s' to '%s'\n", p.Value, p.HighestAcceptedValue)
 		p.Value = p.HighestAcceptedValue
 	}
 
-	if receivedPromises <= len(p.Acceptors)/2 {
+	if receivedPromises <= len(p.Acceptors)/2+1 {
 		fmt.Printf("failed to get majority in prepare phase")
 		return fmt.Errorf("failed to get majority in prepare phase")
 	}
-	fmt.Printf("accepted by %d nodes which is greater than the majority requirement of %d, moving to accept phase\n", receivedPromises, len(p.Acceptors)/2)
+	fmt.Printf("accepted by %d nodes which is greater than the majority requirement of %d, moving to accept phase\n", receivedPromises, len(p.Acceptors)/2+1)
 
 	fmt.Printf("------PHASE 2: ACCEPT------\n")
+	fmt.Printf("Sending %s\n", p.Value)
 	acceptCount := 0
 	for _, acceptor := range p.Acceptors {
 		response, err := p.sendAcceptRequest(acceptor, p.ProposalNumber, p.Value)
@@ -76,7 +76,7 @@ func (p *Proposer) Propose(value string) error {
 		}
 	}
 
-	if acceptCount <= len(p.Acceptors)/2 {
+	if acceptCount <= len(p.Acceptors)/2+1 {
 		return fmt.Errorf("failed to get majority in accept phase")
 	}
 	p.HighestAcceptedProposalNumber = proposalNumber

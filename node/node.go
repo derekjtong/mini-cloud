@@ -135,12 +135,12 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 		return fmt.Errorf("could not achieve consensus")
 	}
 
+	// REDUNDANT: Done by local instance of Acceptor
 	// Write Locally
-	if err := n.writeFileToLocal(n.proposer.Value); err != nil {
-		return fmt.Errorf("error writing file locally %v", err)
-	}
-
-	fmt.Printf("[Node %d]: PROPOSER - Wrote %s (proposer value)\n", n.NodeID, n.proposer.Value)
+	// if err := n.writeFileToLocal(n.proposer.Value); err != nil {
+	// 	return fmt.Errorf("error writing file locally %v", err)
+	// }
+	// fmt.Printf("[Node %d]: PROPOSER - Wrote %s (proposer value)\n", n.NodeID, n.proposer.Value)
 	fmt.Printf("--------------------\n")
 	return nil
 }

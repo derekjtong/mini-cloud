@@ -22,11 +22,11 @@ func NewAcceptor(id int) *Acceptor {
 
 // Handle Prepare request
 func (a *Acceptor) Prepare(proposal int) PrepareResponse {
-	fmt.Printf("    node %d: %#v\n", a.Id, a)
+	fmt.Printf("    node %d: BEFORE %#v\n", a.Id, a)
 	if proposal > a.PromisedProposal {
 		fmt.Printf("    node %d: accepted prepare preposal, (current)promisedProposal=%d, (incoming)proposal=%d\n", a.Id, a.PromisedProposal, proposal)
 		a.PromisedProposal = proposal
-		fmt.Printf("    node %d: %#v\n", a.Id, a)
+		fmt.Printf("    node %d: AFTER %#v\n", a.Id, a)
 		// fmt.Printf("    node %d: {promisedProposal=%d, acceptedValue=%s, acceptedProposal=%d}\n", a.Id, a.PromisedProposal, a.AcceptedValue, a.AcceptedProposal)
 		// Promise to not accept any earlier proposals
 		return PrepareResponse{
