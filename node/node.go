@@ -127,7 +127,7 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 		return err
 	}
 
-	// Propagate
+	// Propagate (paxos should do this)
 	if !req.IsPropagated {
 		for _, neighbor := range n.NeighborNodes {
 			if neighbor == n.addr {
@@ -197,6 +197,6 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 }
 
 func (n *Node) RunPaxos(value string) {
-	paxosinstance := paxos.NewProposer(1, n.rpcClients) 
+	paxosinstance := paxos.NewProposer(1, n.rpcClients)
 	paxosinstance.Propose(value)
 }
