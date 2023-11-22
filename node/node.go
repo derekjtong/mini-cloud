@@ -18,17 +18,23 @@ type Node struct {
 	NodeID        int
 	rpcClients    map[string]*rpc.Client
 	NeighborNodes []string
+	proposer      *paxos.Proposer
+	acceptor      *paxos.Acceptor
 }
 
 func NewNode(nodeID int, addr string) (*Node, error) {
 	if addr == "" {
 		return nil, fmt.Errorf("address cannot be empty")
 	}
+
+	acceptor := paxos.NewAcceptor(nodeID)
 	return &Node{
 		NodeID:        nodeID,
 		addr:          addr,
 		rpcClients:    make(map[string]*rpc.Client),
 		NeighborNodes: make([]string, 0),
+		acceptor:      acceptor,
+		// proposer initialized under SetNeighbors
 	}, nil
 }
 
@@ -60,7 +66,7 @@ func (n *Node) Start() {
 	rpcServer.Accept(listener)
 }
 
-// Ping
+// RPC: Ping
 type PingRequest struct{}
 type PingResponse struct {
 	Message string
@@ -74,7 +80,7 @@ func (n *Node) Ping(req *PingRequest, res *PingResponse) error {
 	return nil
 }
 
-// SetNeighbors
+// PRC: SetNeighbors
 type SetNeighborsRequest struct {
 	Neighbors []string
 }
@@ -96,10 +102,13 @@ func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse)
 		}
 	}
 	fmt.Printf("[Node %d]: Set neighbors\n", n.NodeID)
+
+	// Initialize proposer
+	n.proposer = paxos.NewProposer(n.NodeID, n.NodeID, n.rpcClients)
 	return nil
 }
 
-// Health Check
+// RPC: Health Check
 type HealthCheckRequest struct{}
 type HealthCheckResponse struct {
 	Status string
@@ -110,52 +119,31 @@ func (n *Node) HealthCheck(req *HealthCheckRequest, res *HealthCheckResponse) er
 	return nil
 }
 
-// WriteFile
+// RPC: WriteFile
 type WriteFileRequest struct {
-	Body         string
-	IsPropagated bool
+	Body string
 }
 type WriteFileResponse struct {
 }
 
 func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
-	n.RunPaxos(req.Body)
+	fmt.Printf("[Node %d]: Client write, running Paxos...\n", n.NodeID)
+	err := n.proposer.Propose(req.Body)
+	if err != nil {
+		return fmt.Errorf("could not achieve consensus")
+	}
 
 	// Write Locally
-	localFilePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
-	if err := n.writeFileToLocal(localFilePath, req.Body); err != nil {
-		return err
+	if err := n.writeFileToLocal(req.Body); err != nil {
+		return fmt.Errorf("error writing file locally %v", err)
 	}
 
-	// Propagate (paxos should do this)
-	if !req.IsPropagated {
-		for _, neighbor := range n.NeighborNodes {
-			if neighbor == n.addr {
-				continue // Skip self
-			}
-			client, ok := n.rpcClients[neighbor]
-			if !ok {
-				var err error
-				client, err = rpc.Dial("tcp", neighbor)
-				if err != nil {
-					fmt.Printf("[Node %d]: Error connecting to neighbor at %s: %v\n", n.NodeID, neighbor, err)
-					continue
-				}
-				n.rpcClients[neighbor] = client
-			}
-			propagatedReq := WriteFileRequest{Body: req.Body, IsPropagated: true}
-			var neighborRes WriteFileResponse
-			if err := client.Call("Node.WriteFile", &propagatedReq, &neighborRes); err != nil {
-				fmt.Printf("[Node %d]: Error writing to neighbor at %s: %v\n", n.NodeID, neighbor, err)
-			}
-		}
-
-	}
-	fmt.Printf("[Node %d]: WARNING, NO PAXOS. Wrote %s\n", n.NodeID, req.Body)
+	fmt.Printf("[Node %d]: Wrote %s\n", n.NodeID, req.Body)
 	return nil
 }
 
-func (n *Node) writeFileToLocal(filePath, data string) error {
+func (n *Node) writeFileToLocal(data string) error {
+	filePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
 	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666) // Overwrite
 	if err != nil {
@@ -169,7 +157,7 @@ func (n *Node) writeFileToLocal(filePath, data string) error {
 	return nil
 }
 
-// ReadFile
+// RPC: ReadFile
 type ReadFileRequest struct {
 }
 
@@ -196,7 +184,21 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 	return nil
 }
 
-func (n *Node) RunPaxos(value string) {
-	paxosinstance := paxos.NewProposer(1, n.rpcClients)
-	paxosinstance.Propose(value)
+// RPC: Prepare
+func (n *Node) Prepare(req *paxos.PrepareRequest, res *paxos.PrepareResponse) error {
+	fmt.Printf("    node %d received prepare request from %d\n", n.NodeID, req.Id)
+	*res = n.acceptor.Prepare(req.Proposal)
+	// fmt.Printf("[Node %d]: Completed prepare\n", n.NodeID)
+	return nil
+}
+
+// RPC: Accept
+func (n *Node) Accept(req *paxos.AcceptRequest, res *paxos.AcceptResponse) error {
+	fmt.Printf("    node %d: received accept request from %d\n", n.NodeID, req.Id)
+	*res = n.acceptor.Accept(req.Proposal, req.Value)
+	if res.OK {
+		fmt.Printf("[Node %d]: Wrote %s\n", n.NodeID, req.Value)
+		n.writeFileToLocal(req.Value)
+	}
+	return nil
 }
