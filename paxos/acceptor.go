@@ -42,7 +42,7 @@ func (a *Acceptor) Prepare(proposal int) PrepareResponse {
 			AcceptedValue: a.AcceptedValue,
 		}
 	}
-	fmt.Printf("%s    node %d: REJECTED - PromisedProposal:%d greater than incoming proposal: %d%s\n", Red, a.Id, a.PromisedProposal, proposal, Reset)
+	fmt.Printf("%s    node %d: REJECTED - PromisedProposal:%d greater than or equal to incoming proposal:%d%s\n", Red, a.Id, a.PromisedProposal, proposal, Reset)
 	return PrepareResponse{
 		Id: a.Id,
 		OK: false,
@@ -55,7 +55,7 @@ func (a *Acceptor) Accept(proposal int, value string) AcceptResponse {
 
 	if proposal >= a.PromisedProposal {
 		fmt.Printf("%s    node %d: ACCEPTED - proposal:%d >= PromisedProposal:%d%s\n", Green, a.Id, proposal, a.PromisedProposal, Reset)
-		fmt.Printf("    node %d: UPDATING - value '%s' -> '%s', AcceptedProposal %d -> %d\n", a.Id, a.AcceptedValue, value, a.AcceptedProposal, proposal)
+		fmt.Printf("    node %d: updating - value '%s' -> '%s', AcceptedProposal %d -> %d\n", a.Id, a.AcceptedValue, value, a.AcceptedProposal, proposal)
 		a.PromisedProposal = proposal
 		a.AcceptedProposal = proposal
 		a.AcceptedValue = value
