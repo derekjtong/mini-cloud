@@ -33,7 +33,7 @@ func (p *Proposer) Propose(value string) error {
 
 	fmt.Printf("------PHASE 1: PREPARE------\n")
 	// Phase 1: Prepare
-	fmt.Printf("CURRENT PROPOSAL NUMBER: %d\n", p.ProposalNumber)
+	fmt.Printf("Current proposal number: %d\n", p.ProposalNumber)
 	receivedPromises := 0
 	// p.HighestAcceptedProposalNumber = -1
 	p.HighestAcceptedValue = ""
@@ -89,11 +89,11 @@ func (p *Proposer) sendPrepareRequest(acceptor *rpc.Client, proposalNumber int) 
 		Id:       p.id,
 		Proposal: proposalNumber,
 	}
-	fmt.Printf("  node %d: SENDING  - %#v\n", p.id, request)
+	fmt.Printf("  node %d: sending  - %#v\n", p.id, request)
 	var response PrepareResponse
 	err := acceptor.Call("Node.Prepare", request, &response)
 
-	fmt.Printf("  node %d: RECEIVED - %#v\n", p.id, response)
+	fmt.Printf("  node %d: received - %#v\n", p.id, response)
 	return &response, err
 }
 
@@ -104,7 +104,7 @@ func (p *Proposer) sendAcceptRequest(acceptor *rpc.Client, proposalNumber int, v
 		Proposal: proposalNumber,
 		Value:    value,
 	}
-	fmt.Printf("  node %d: SENDING  - %#v\n", p.id, request)
+	fmt.Printf("  node %d: sending  - %#v\n", p.id, request)
 	var response AcceptResponse
 	err := acceptor.Call("Node.Accept", request, &response)
 
