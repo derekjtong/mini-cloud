@@ -14,8 +14,8 @@ type Acceptor struct {
 func NewAcceptor(id int) *Acceptor {
 	return &Acceptor{
 		Id:               id,
-		PromisedProposal: 0,
-		AcceptedProposal: 0,
+		PromisedProposal: -1,
+		AcceptedProposal: -1,
 		AcceptedValue:    "",
 	}
 }
