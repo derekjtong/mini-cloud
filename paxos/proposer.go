@@ -57,7 +57,7 @@ func (p *Proposer) Propose(value string) error {
 		p.Value = p.HighestAcceptedValue
 	}
 
-	if receivedPromises <= len(p.Acceptors)/2+1 {
+	if receivedPromises < len(p.Acceptors)/2+1 {
 		fmt.Printf("failed to get majority in prepare phase")
 		return fmt.Errorf("failed to get majority in prepare phase")
 	}
