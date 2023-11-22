@@ -76,7 +76,7 @@ func (p *Proposer) Propose(value string) error {
 		}
 	}
 
-	if acceptCount <= len(p.Acceptors)/2+1 {
+	if acceptCount < len(p.Acceptors)/2+1 {
 		return fmt.Errorf("failed to get majority in accept phase")
 	}
 	p.HighestAcceptedProposalNumber = proposalNumber
