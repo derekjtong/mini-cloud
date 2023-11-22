@@ -208,7 +208,7 @@ func checkDirStatus(dir string) (exists bool, isEmpty bool, err error) {
 
 func runCLI(client *rpc.Client) {
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Enter commands (type 'exit' to quit):")
+	fmt.Println("Enter commands (type 'help' to see full option):")
 
 	for {
 		fmt.Print("> ")
