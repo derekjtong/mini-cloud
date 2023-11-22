@@ -45,7 +45,7 @@ func (p *Proposer) Propose(value string) error {
 		if response.OK {
 			receivedPromises++
 			if response.Proposal > p.HighestAcceptedProposalNumber {
-				fmt.Printf("--HIGHER ACCEPTED PROPOSAL DETECTED (%d > %d) - Changing accepted value from '%s' to '%s'\n", response.Proposal, p.HighestAcceptedProposalNumber, p.HighestAcceptedValue, response.AcceptedValue)
+				fmt.Printf("!!HIGHER ACCEPTED PROPOSAL DETECTED (%d > %d) - Changing accepted value from '%s' to '%s'\n", response.Proposal, p.HighestAcceptedProposalNumber, p.HighestAcceptedValue, response.AcceptedValue)
 				p.HighestAcceptedProposalNumber = response.Proposal
 				p.HighestAcceptedValue = response.AcceptedValue
 			}
@@ -53,15 +53,15 @@ func (p *Proposer) Propose(value string) error {
 	}
 	if p.HighestAcceptedProposalNumber != -1 && p.HighestAcceptedValue != "" {
 		// Use the highest accepted value from the prepare phase
-		fmt.Printf("--SENDING NEW VALUE - Changing send value from '%s' to '%s'\n", p.Value, p.HighestAcceptedValue)
+		fmt.Printf("!!SENDING NEW VALUE - Changing send value from '%s' to '%s'\n", p.Value, p.HighestAcceptedValue)
 		p.Value = p.HighestAcceptedValue
 	}
 
 	if receivedPromises < len(p.Acceptors)/2+1 {
-		fmt.Printf("failed to get majority in prepare phase")
+		fmt.Printf("failed to gain consensus: accepted by %d nodes which is less than the majority requirement of %d\n", receivedPromises, len(p.Acceptors)/2+1)
 		return fmt.Errorf("failed to get majority in prepare phase")
 	}
-	fmt.Printf("accepted by %d nodes which is greater than the majority requirement of %d, moving to accept phase\n", receivedPromises, len(p.Acceptors)/2+1)
+	fmt.Printf("proceeding to accept phase: accepted by %d nodes which is greater than the majority requirement of %d\n", receivedPromises, len(p.Acceptors)/2+1)
 
 	fmt.Printf("------PHASE 2: ACCEPT------\n")
 	fmt.Printf("Sending %s\n", p.Value)
@@ -89,11 +89,11 @@ func (p *Proposer) sendPrepareRequest(acceptor *rpc.Client, proposalNumber int) 
 		Id:       p.id,
 		Proposal: proposalNumber,
 	}
-	fmt.Printf("  node %d: sending %#v\n", p.id, request)
+	fmt.Printf("  node %d: SENDING  - %#v\n", p.id, request)
 	var response PrepareResponse
 	err := acceptor.Call("Node.Prepare", request, &response)
 
-	fmt.Printf("  node %d: received %#v\n", p.id, response)
+	fmt.Printf("  node %d: RECEIVED - %#v\n", p.id, response)
 	return &response, err
 }
 
@@ -104,7 +104,7 @@ func (p *Proposer) sendAcceptRequest(acceptor *rpc.Client, proposalNumber int, v
 		Proposal: proposalNumber,
 		Value:    value,
 	}
-	fmt.Printf("  node %d: sending %#v\n", p.id, request)
+	fmt.Printf("  node %d: SENDING  - %#v\n", p.id, request)
 	var response AcceptResponse
 	err := acceptor.Call("Node.Accept", request, &response)
 

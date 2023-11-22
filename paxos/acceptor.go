@@ -22,11 +22,11 @@ func NewAcceptor(id int) *Acceptor {
 
 // Handle Prepare request
 func (a *Acceptor) Prepare(proposal int) PrepareResponse {
-	fmt.Printf("    node %d: BEFORE %#v\n", a.Id, a)
+	fmt.Printf("    node %d: STATUS   - %#v\n", a.Id, a)
 	if proposal > a.PromisedProposal {
-		fmt.Printf("    node %d: accepted prepare preposal, (current)promisedProposal=%d, (incoming)proposal=%d\n", a.Id, a.PromisedProposal, proposal)
+		fmt.Printf("    node %d: ACCEPTED - changing PromisedProposal from %d to incoming %d\n", a.Id, a.PromisedProposal, proposal)
 		a.PromisedProposal = proposal
-		fmt.Printf("    node %d: AFTER %#v\n", a.Id, a)
+		fmt.Printf("    node %d: STATUS   - %#v\n", a.Id, a)
 		// fmt.Printf("    node %d: {promisedProposal=%d, acceptedValue=%s, acceptedProposal=%d}\n", a.Id, a.PromisedProposal, a.AcceptedValue, a.AcceptedProposal)
 		// Promise to not accept any earlier proposals
 		return PrepareResponse{
@@ -36,7 +36,7 @@ func (a *Acceptor) Prepare(proposal int) PrepareResponse {
 			AcceptedValue: a.AcceptedValue,
 		}
 	}
-	fmt.Printf("    node %d: rejected prepare proposal {promisedProposal=%d}\n", a.Id, a.PromisedProposal)
+	fmt.Printf("    node %d: REJECTED - PromisedProposal:%d greater than incoming proposal: %d\n", a.Id, a.PromisedProposal, proposal)
 	return PrepareResponse{
 		Id: a.Id,
 		OK: false,
@@ -45,21 +45,23 @@ func (a *Acceptor) Prepare(proposal int) PrepareResponse {
 
 // Handle Accept request
 func (a *Acceptor) Accept(proposal int, value string) AcceptResponse {
+	fmt.Printf("    node %d: STATUS   - %#v\n", a.Id, a)
+
 	if proposal >= a.PromisedProposal {
+		fmt.Printf("    node %d: ACCEPTED - proposal:%d >= PromisedProposal:%d\n", a.Id, proposal, a.PromisedProposal)
+		fmt.Printf("    node %d: UPDATING - value '%s' -> '%s', AcceptedProposal %d -> %d\n", a.Id, a.AcceptedValue, value, a.AcceptedProposal, proposal)
 		a.PromisedProposal = proposal
 		a.AcceptedProposal = proposal
 		a.AcceptedValue = value
-		fmt.Printf("    node %d: promised proposal=%d\n", a.Id, a.PromisedProposal)
-		fmt.Printf("    node %d: accepted proposal=%d\n", a.Id, a.AcceptedProposal)
-		fmt.Printf("    node %d: accepted value %s\n", a.Id, a.AcceptedValue)
 		// Accept proposal
+		fmt.Printf("    node %d: STATUS   - %#v\n", a.Id, a)
 		return AcceptResponse{
 			Id:       a.Id,
 			OK:       true,
 			Proposal: proposal,
 		}
 	}
-	fmt.Printf("Rejected")
+	fmt.Printf("    node %d: REJECTED - proposal:%d < PromisedProposal:%d (should be >=)\n", a.Id, proposal, a.PromisedProposal)
 	return AcceptResponse{
 		Id: a.Id,
 		OK: false,
