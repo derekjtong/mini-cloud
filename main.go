@@ -53,7 +53,7 @@ func startClient() {
 	}
 
 	// fmt.Printf("%v, connected!", response.Message)
-	fmt.Printf("Connected to node %v\n", response.NodeID)
+	fmt.Printf("Connected to node %v!\n", response.NodeID)
 
 	runCLI(client)
 }
@@ -62,7 +62,7 @@ func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 
 	if utils.ClearNodeDataOnStart {
-		fmt.Println("[SERVER]: Clearing node_data directory...")
+		fmt.Println("[SERVER]: Clearing node_data directory")
 		if err := clearDir("./node_data"); err != nil {
 			fmt.Printf("Error clearing node_data directory: %v\n", err)
 			return
@@ -76,7 +76,7 @@ func startServer() {
 	}
 	for nodeID := 1; nodeID <= utils.NodeCount; nodeID++ {
 		if !utils.MinimalStartUpLogging {
-			fmt.Printf("[SERVER]: Creating node %d...\n", nodeID)
+			fmt.Printf("[SERVER]: Creating node %d\n", nodeID)
 		}
 		port, err := findAvailablePort()
 		if err != nil {
@@ -107,7 +107,7 @@ func startServer() {
 	}
 	for _, nodeAddr := range nodeAddrList {
 		if !utils.MinimalStartUpLogging {
-			fmt.Printf("[SERVER]: RPC to set neighbors...\n")
+			fmt.Printf("[SERVER]: RPC to set neighbors\n")
 		}
 		client, err := rpc.Dial("tcp", nodeAddr)
 		if err != nil {
@@ -265,6 +265,14 @@ func runCLI(client *rpc.Client) {
 			} else {
 				fmt.Printf("%s\n%s\n", res.AcceptorInfo, res.ProposerInfo)
 			}
+		case "help":
+			fmt.Println("Available commands:")
+			fmt.Println("  ping - send ping request to node")
+			fmt.Println("  write <string> - write string to file")
+			fmt.Println("  read - read string from file")
+			fmt.Println("  info - show info about node proposer and acceptor")
+			fmt.Println("  help - show this message")
+			fmt.Println("  exit - exit program")
 		default:
 			fmt.Println("Unknown command:", input)
 		}
