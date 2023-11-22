@@ -127,7 +127,9 @@ type WriteFileResponse struct {
 }
 
 func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
-	fmt.Printf("[Node %d]: Client write, running Paxos...\n", n.NodeID)
+	fmt.Printf("--------------------\n")
+	fmt.Printf("[Node %d]: Client trying to write %s, running Paxos...\n", n.NodeID, req.Body)
+
 	err := n.proposer.Propose(req.Body)
 	if err != nil {
 		return fmt.Errorf("could not achieve consensus")
@@ -139,6 +141,7 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	}
 
 	fmt.Printf("[Node %d]: Wrote %s\n", n.NodeID, req.Body)
+	fmt.Printf("--------------------\n")
 	return nil
 }
 
@@ -186,7 +189,7 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 
 // RPC: Prepare
 func (n *Node) Prepare(req *paxos.PrepareRequest, res *paxos.PrepareResponse) error {
-	fmt.Printf("    node %d received prepare request from %d\n", n.NodeID, req.Id)
+	fmt.Printf("    node %d: received prepare request from %d {proposal: %d}\n", n.NodeID, req.Id, req.Proposal)
 	*res = n.acceptor.Prepare(req.Proposal)
 	// fmt.Printf("[Node %d]: Completed prepare\n", n.NodeID)
 	return nil
@@ -194,7 +197,8 @@ func (n *Node) Prepare(req *paxos.PrepareRequest, res *paxos.PrepareResponse) er
 
 // RPC: Accept
 func (n *Node) Accept(req *paxos.AcceptRequest, res *paxos.AcceptResponse) error {
-	fmt.Printf("    node %d: received accept request from %d\n", n.NodeID, req.Id)
+	fmt.Printf("    node %d: received accept request from %d {Proposal: %d, Value=%s}\n", n.NodeID, req.Id, req.Proposal, req.Value)
+
 	*res = n.acceptor.Accept(req.Proposal, req.Value)
 	if res.OK {
 		fmt.Printf("[Node %d]: Wrote %s\n", n.NodeID, req.Value)
