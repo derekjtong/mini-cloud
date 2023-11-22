@@ -40,7 +40,7 @@ func NewNode(nodeID int, addr string) (*Node, error) {
 
 // Start
 func (n *Node) Start() {
-	fsDir := fmt.Sprintf("./node_data/node_data_%s", n.addr)
+	fsDir := "./node_data/"
 	if err := os.MkdirAll(fsDir, 0755); err != nil {
 		fmt.Printf("[Node %d]: Error creating file system directory: %v\n", n.NodeID, err)
 		return
@@ -92,14 +92,14 @@ func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse)
 	n.NeighborNodes = req.Neighbors
 	for _, neighbor := range req.Neighbors {
 		// Check to not include node's own IP address
-		if neighbor != n.addr && n.rpcClients[neighbor] == nil {
-			client, err := rpc.Dial("tcp", neighbor)
-			if err != nil {
-				fmt.Printf("[Node %d]: Error connecting to neighbor at %s: %v\n", n.NodeID, neighbor, err)
-				continue
-			}
-			n.rpcClients[neighbor] = client
+		// if neighbor != n.addr && n.rpcClients[neighbor] == nil {
+		client, err := rpc.Dial("tcp", neighbor)
+		if err != nil {
+			fmt.Printf("[Node %d]: Error connecting to neighbor at %s: %v\n", n.NodeID, neighbor, err)
+			continue
 		}
+		n.rpcClients[neighbor] = client
+		// }
 	}
 	fmt.Printf("[Node %d]: Set neighbors\n", n.NodeID)
 
@@ -136,17 +136,17 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	}
 
 	// Write Locally
-	if err := n.writeFileToLocal(req.Body); err != nil {
+	if err := n.writeFileToLocal(n.proposer.Value); err != nil {
 		return fmt.Errorf("error writing file locally %v", err)
 	}
 
-	fmt.Printf("[Node %d]: Wrote %s\n", n.NodeID, req.Body)
+	fmt.Printf("[Node %d]: PROPOSER - Wrote %s (proposer value)\n", n.NodeID, n.proposer.Value)
 	fmt.Printf("--------------------\n")
 	return nil
 }
 
 func (n *Node) writeFileToLocal(data string) error {
-	filePath := fmt.Sprintf("./node_data/node_data_%s/data.json", n.addr)
+	filePath := fmt.Sprintf("./node_data/node_data_%s.json", n.addr)
 	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666) // Overwrite
 	if err != nil {
@@ -200,9 +200,26 @@ func (n *Node) Accept(req *paxos.AcceptRequest, res *paxos.AcceptResponse) error
 	fmt.Printf("    node %d: received accept request from %d {Proposal: %d, Value=%s}\n", n.NodeID, req.Id, req.Proposal, req.Value)
 
 	*res = n.acceptor.Accept(req.Proposal, req.Value)
+	n.acceptor.AcceptedValue = req.Value
 	if res.OK {
-		fmt.Printf("[Node %d]: Wrote %s\n", n.NodeID, req.Value)
+		fmt.Printf("[Node %d]: ACCEPTOR - Wrote %s\n", n.NodeID, req.Value)
 		n.writeFileToLocal(req.Value)
 	}
+	return nil
+}
+
+// RPC: info
+type InfoRequest struct{}
+type InfoResponse struct {
+	ProposerInfo string
+	AcceptorInfo string
+}
+
+func (n *Node) Info(req *InfoRequest, res *InfoResponse) error {
+	// res.AcceptorInfo = fmt.Sprintf("%#v\n", n.acceptor)
+	// res.ProposerInfo = fmt.Sprintf("%#v\n", n.proposer)
+
+	res.AcceptorInfo = fmt.Sprintf("Acceptor={PromisedProposal:%d, AcceptedProposal:%d, AcceptedValue:%s}", n.acceptor.PromisedProposal, n.acceptor.AcceptedProposal, n.acceptor.AcceptedValue)
+	res.ProposerInfo = fmt.Sprintf("Proposer={ProposalNumber:%d, Value:%s, HighestAcceptedProposalNumber:%d, HighestAcceptedValue:%s}", n.proposer.ProposalNumber, n.proposer.Value, n.proposer.HighestAcceptedProposalNumber, n.proposer.HighestAcceptedValue)
 	return nil
 }

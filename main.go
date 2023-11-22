@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -60,7 +61,13 @@ func startClient() {
 func startServer() {
 	fmt.Printf("Starting server! Hint: to start client, 'go run main.go client'.\n\n")
 
-	if utils.CheckNodeData {
+	if utils.ClearNodeDataOnStart {
+		fmt.Println("Clearing node_data directory...")
+		if err := clearDir("./node_data"); err != nil {
+			fmt.Printf("Error clearing node_data directory: %v\n", err)
+			return
+		}
+	} else if utils.CheckNodeData {
 		const nodeDataDir = "./node_data"
 		exists, isEmpty, err := checkDirStatus(nodeDataDir)
 		if err != nil {
@@ -246,16 +253,44 @@ func runCLI(client *rpc.Client) {
 				fmt.Println("Write operation successful")
 			}
 		case "read":
-			var readReq node.ReadFileRequest
-			var readRes node.ReadFileResponse
-			if err := client.Call("Node.ReadFile", &readReq, &readRes); err != nil {
+			var req node.ReadFileRequest
+			var res node.ReadFileResponse
+			if err := client.Call("Node.ReadFile", &req, &res); err != nil {
 				fmt.Printf("Error calling ReadFile RPC method: %v\n", err)
 			} else {
-				fmt.Println("Data read from file:", readRes.Data)
+				fmt.Println("Data read from file:", res.Data)
 			}
-
+		case "info":
+			var req node.InfoRequest
+			var res node.InfoResponse
+			if err := client.Call("Node.Info", &req, &res); err != nil {
+				fmt.Printf("Error getting info: %v\n", err)
+			} else {
+				fmt.Printf("%s\n%s\n", res.AcceptorInfo, res.ProposerInfo)
+			}
 		default:
 			fmt.Println("Unknown command:", input)
 		}
 	}
+}
+
+func clearDir(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
