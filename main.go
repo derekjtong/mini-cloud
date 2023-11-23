@@ -265,6 +265,15 @@ func runCLI(client *rpc.Client) {
 			} else {
 				fmt.Printf("%s\n%s\n", res.AcceptorInfo, res.ProposerInfo)
 			}
+		case "timeout":
+			var req node.TimeoutRequest
+			var res node.TimeoutResponse
+			if err := client.Call("Node.ToggleTimeout", &req, &res); err != nil {
+				fmt.Printf("Error Timeout: %v\n", err)
+			} else {
+				fmt.Printf(" Timeout occurred!\n")
+			}
+
 		case "help":
 			fmt.Println("Available commands:")
 			fmt.Println("  ping - send ping request to node")
@@ -273,6 +282,7 @@ func runCLI(client *rpc.Client) {
 			fmt.Println("  info - show info about node proposer and acceptor")
 			fmt.Println("  help - show this message")
 			fmt.Println("  exit - exit program")
+			fmt.Println("  timeout - stop time")
 		default:
 			fmt.Println("Unknown command:", input)
 		}

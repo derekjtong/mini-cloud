@@ -3,6 +3,7 @@ package paxos
 import (
 	"fmt"
 	"net/rpc"
+	"time"
 )
 
 type Proposer struct {
@@ -13,6 +14,7 @@ type Proposer struct {
 
 	HighestAcceptedProposalNumber int
 	HighestAcceptedValue          string // Highest accepted value
+	Timeout                       bool
 }
 
 func NewProposer(id int, proposalNumber int, acceptors map[string]*rpc.Client) *Proposer {
@@ -62,6 +64,10 @@ func (p *Proposer) Propose(value string) error {
 		return fmt.Errorf("failed to get majority in prepare phase")
 	}
 	fmt.Printf("proceeding to accept phase: accepted by %d nodes which is greater than the majority requirement of %d\n", receivedPromises, len(p.Acceptors)/2+1)
+
+	if p.Timeout {
+		time.Sleep(10 * time.Second)
+	}
 
 	fmt.Printf("------PHASE 2: ACCEPT------\n")
 	fmt.Printf("Sending %s\n", p.Value)

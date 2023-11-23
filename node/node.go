@@ -231,3 +231,18 @@ func (n *Node) Info(req *InfoRequest, res *InfoResponse) error {
 	res.ProposerInfo = fmt.Sprintf("Proposer={ProposalNumber:%d, Value:\"%s\", HighestAcceptedProposalNumber:%d, HighestAcceptedValue:%s}", n.proposer.ProposalNumber, n.proposer.Value, n.proposer.HighestAcceptedProposalNumber, n.proposer.HighestAcceptedValue)
 	return nil
 }
+
+// RPC: Toggletimeout
+type TimeoutRequest struct{}
+type TimeoutResponse struct{}
+
+func (n *Node) ToggleTimeout(req *TimeoutRequest, res *TimeoutResponse) error {
+	if n.proposer.Timeout == true {
+		n.proposer.Timeout = false
+	} else {
+		n.proposer.Timeout = true
+	}
+
+	fmt.Printf("[Node %d]: Timeout occurred!\n", n.NodeID)
+	return nil
+}
