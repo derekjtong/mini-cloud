@@ -141,37 +141,23 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	err := n.proposer.Propose(req.Body)
 	if err != nil {
 		return err
-		// return fmt.Errorf("could not achieve consensus")
 	}
 
-	// REDUNDANT: Done by local instance of Acceptor
-	// Write Locally
-	// if err := n.writeFileToLocal(n.proposer.Value); err != nil {
-	// 	return fmt.Errorf("error writing file locally %v", err)
-	// }
-	// fmt.Printf("[Node %d]: PROPOSER - Wrote %s (proposer value)\n", n.NodeID, n.proposer.Value)
 	fmt.Printf("[Node %d]: Paxos completed\n", n.NodeID)
 	fmt.Printf("--------------------\n")
 	return nil
 }
 
+// RPC: ForceWrite - WriteFile with retry
 func (n *Node) ForceWrite(req *WriteFileRequest, res *WriteFileResponse) error {
 	fmt.Printf("[Node %d]: Client trying to write %s, running Paxos...\n", n.NodeID, req.Body)
 	fmt.Printf("--------------------\n")
 
 	const maxRetries = 5
-	// Standard
-	// const backoffDuration = 2 * time.Second
-
-	// Randomized delay
-
 	var err error
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		if attempt > 0 {
 			fmt.Printf("[Node %d]: Retrying attempt %d/%d\n", n.NodeID, attempt, maxRetries)
-			// Standard
-			// time.Sleep(backoffDuration)
-
 			// Randomized delay
 			r := rand.Intn(5-1+1) + 1
 			time.Sleep(time.Duration(r) * time.Second)
@@ -192,7 +178,7 @@ func (n *Node) ForceWrite(req *WriteFileRequest, res *WriteFileResponse) error {
 
 func (n *Node) writeFileToLocal(data string) error {
 	filePath := fmt.Sprintf("./node_data/node_data_%s.json", n.addr)
-	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666) //Append
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666) // Overwrite
 	if err != nil {
 		return err
@@ -262,7 +248,7 @@ func (n *Node) Accept(req *paxos.AcceptRequest, res *paxos.AcceptResponse) error
 	return nil
 }
 
-// RPC: info
+// RPC: Info
 type InfoRequest struct{}
 type InfoResponse struct {
 	ProposerInfo string

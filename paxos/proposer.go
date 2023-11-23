@@ -27,6 +27,7 @@ func NewProposer(id int, proposalNumber int, acceptors map[string]*rpc.Client) *
 	}
 }
 
+// Paxos
 func (p *Proposer) Propose(value string) error {
 	fmt.Printf("---PAXOS---\n")
 	p.OriginalRequest = value
@@ -95,7 +96,6 @@ func (p *Proposer) Propose(value string) error {
 }
 
 func (p *Proposer) sendPrepareRequest(acceptor *rpc.Client, proposalNumber int) (*PrepareResponse, error) {
-	// TODO: Add timeout
 	request := PrepareRequest{
 		Id:       p.id,
 		Proposal: proposalNumber,
@@ -109,7 +109,6 @@ func (p *Proposer) sendPrepareRequest(acceptor *rpc.Client, proposalNumber int) 
 }
 
 func (p *Proposer) sendAcceptRequest(acceptor *rpc.Client, proposalNumber int, value string) (*AcceptResponse, error) {
-	// TODO: Add timeout
 	request := AcceptRequest{
 		Id:       p.id,
 		Proposal: proposalNumber,

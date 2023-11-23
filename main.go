@@ -44,7 +44,7 @@ func startClient() {
 	fmt.Printf("Connecting to %s:%d...\n", IPAddress, Port)
 	client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", IPAddress, Port))
 	if err != nil {
-		fmt.Printf("Error dialing RPC server:%v\n", err)
+		fmt.Printf("Error dialing RPC server: %v\n", err)
 		os.Exit(1)
 	}
 	defer client.Close()
@@ -56,7 +56,6 @@ func startClient() {
 		os.Exit(1)
 	}
 
-	// fmt.Printf("%v, connected!", response.Message)
 	fmt.Printf("Connected to node %v!\n", response.NodeID)
 
 	runCLI(client)
@@ -74,6 +73,7 @@ func startServer() {
 	}
 
 	var nodeAddrList []string
+
 	// Start nodes
 	if utils.MinimalStartUpLogging {
 		fmt.Printf("[SERVER]: Starting nodes\n")
@@ -105,6 +105,7 @@ func startServer() {
 			return
 		}
 	}
+
 	// Send list of IP addresses to nodes
 	if utils.MinimalStartUpLogging {
 		fmt.Printf("[SERVER]: Sending list of node IP addresses to each node\n")
@@ -161,6 +162,7 @@ func waitForServerReady(address string) error {
 	return fmt.Errorf("server at %s did not become ready afte %d attemps", address, maxRetries)
 }
 
+// Find available port on system
 func findAvailablePort() (int, error) {
 	// Find a free port
 	listener, err := net.Listen("tcp", ":0")
@@ -184,6 +186,7 @@ func findAvailablePort() (int, error) {
 	return port, nil
 }
 
+// Client CLI
 func runCLI(client *rpc.Client) {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Enter commands (get 'help' to see full options):")
@@ -296,6 +299,7 @@ func runCLI(client *rpc.Client) {
 	}
 }
 
+// Clear node_data directory
 func clearDir(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
