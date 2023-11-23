@@ -25,8 +25,8 @@ func main() {
 		switch os.Args[1] {
 		case "client":
 			startClient()
-		case "sim1":
-			fmt.Printf("Sim 1\n")
+		default:
+			fmt.Printf("Invalid arg")
 		}
 	} else {
 		startServer()
