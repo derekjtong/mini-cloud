@@ -224,9 +224,7 @@ func (n *Node) Prepare(req *paxos.PrepareRequest, res *paxos.PrepareResponse) er
 		return nil
 	}
 	fmt.Printf("    node %d: received - %#v\n", n.NodeID, req)
-	// fmt.Printf("    node %d: received prepare request from %d {proposal: %d}\n", n.NodeID, req.Id, req.Proposal)
 	*res = n.acceptor.Prepare(req.Proposal)
-	// fmt.Printf("[Node %d]: Completed prepare\n", n.NodeID)
 	return nil
 }
 
@@ -236,8 +234,6 @@ func (n *Node) Accept(req *paxos.AcceptRequest, res *paxos.AcceptResponse) error
 		return nil
 	}
 	fmt.Printf("    node %d: received - %#v\n", n.NodeID, req)
-
-	// fmt.Printf("    node %d: received accept request from %d {Proposal: %d, Value=%s}\n", n.NodeID, req.Id, req.Proposal, req.Value)
 
 	*res = n.acceptor.Accept(req.Proposal, req.Value)
 	n.acceptor.AcceptedValue = req.Value
@@ -256,6 +252,7 @@ type InfoResponse struct {
 }
 
 func (n *Node) Info(req *InfoRequest, res *InfoResponse) error {
+	// Not used because too verbose: will print out *rpc.Clients map
 	// res.AcceptorInfo = fmt.Sprintf("%#v\n", n.acceptor)
 	// res.ProposerInfo = fmt.Sprintf("%#v\n", n.proposer)
 
