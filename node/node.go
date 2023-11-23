@@ -5,6 +5,7 @@ package node
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/rpc"
 	"os"
@@ -159,13 +160,21 @@ func (n *Node) ForceWrite(req *WriteFileRequest, res *WriteFileResponse) error {
 	fmt.Printf("--------------------\n")
 
 	const maxRetries = 5
-	const backoffDuration = 2 * time.Second
+	// Standard
+	// const backoffDuration = 2 * time.Second
+
+	// Randomized delay
 
 	var err error
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		if attempt > 0 {
 			fmt.Printf("[Node %d]: Retrying attempt %d/%d\n", n.NodeID, attempt, maxRetries)
-			time.Sleep(backoffDuration)
+			// Standard
+			// time.Sleep(backoffDuration)
+
+			// Randomized delay
+			r := rand.Intn(5-1+1) + 1
+			time.Sleep(time.Duration(r) * time.Second)
 		}
 
 		err = n.proposer.Propose(req.Body)
