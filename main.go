@@ -5,7 +5,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"net"
 	"net/rpc"
 	"os"
@@ -13,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/derekjtong/paxos/node"
-	"github.com/derekjtong/paxos/utils"
+	"github.com/derekjtong/mini-cloud/node"
+	"github.com/derekjtong/mini-cloud/utils"
 )
 
 type NodeIPs struct {
@@ -59,10 +58,10 @@ func startClient() {
 
 	fmt.Printf("Connected to node %v!\n", response.NodeID)
 	if os.Args[1] == "kill" {
-        os.Setenv("TERMINATE", "true")
-        fmt.Println("TERMINATE signal sent. Exiting.")
-        os.Exit(0)
-    }
+		os.Setenv("TERMINATE", "true")
+		fmt.Println("TERMINATE signal sent. Exiting.")
+		os.Exit(0)
+	}
 
 	runCLI(client)
 }
@@ -203,7 +202,7 @@ func runCLI(client *rpc.Client) {
 		input := scanner.Text()
 
 		if input == "exit" {
-			
+
 			break
 		}
 
@@ -273,6 +272,7 @@ func runCLI(client *rpc.Client) {
 				fmt.Printf("Error calling Terminate RPC method: %v\n", err)
 			} else {
 				fmt.Println("Termination command sent to all nodes.")
+			}
 		case "timeout":
 			var req node.TimeoutRequest
 			var res node.TimeoutResponse
@@ -334,20 +334,20 @@ func clearDir(dir string) error {
 	return nil
 }
 func waitForTermination(client *rpc.Client) {
-    var healthCheckReq node.HealthCheckRequest
-    var healthCheckRes node.HealthCheckResponse
+	var healthCheckReq node.HealthCheckRequest
+	var healthCheckRes node.HealthCheckResponse
 
-    for {
-        if err := client.Call("Node.HealthCheck", &healthCheckReq, &healthCheckRes); err != nil {
-            fmt.Printf("Error checking health status: %v\n", err)
-            break
-        }
+	for {
+		if err := client.Call("Node.HealthCheck", &healthCheckReq, &healthCheckRes); err != nil {
+			fmt.Printf("Error checking health status: %v\n", err)
+			break
+		}
 
-        if healthCheckRes.Status != "OK" {
-            fmt.Println("All nodes terminated. Exiting.")
-            break
-        }
+		if healthCheckRes.Status != "OK" {
+			fmt.Println("All nodes terminated. Exiting.")
+			break
+		}
 
-        time.Sleep(1 * time.Second)
-    }
+		time.Sleep(1 * time.Second)
+	}
 }
