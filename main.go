@@ -5,6 +5,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"net/rpc"
 	"os"
@@ -21,13 +22,8 @@ type NodeIPs struct {
 }
 
 func main() {
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "client":
-			startClient()
-		case "sim1":
-			fmt.Printf("Sim 1\n")
-		}
+	if len(os.Args) > 1 && os.Args[1] == "client" {
+		startClient()
 	} else {
 		startServer()
 	}
@@ -58,6 +54,11 @@ func startClient() {
 
 	// fmt.Printf("%v, connected!", response.Message)
 	fmt.Printf("Connected to node %v!\n", response.NodeID)
+	if os.Args[1] == "kill" {
+        os.Setenv("TERMINATE", "true")
+        fmt.Println("TERMINATE signal sent. Exiting.")
+        os.Exit(0)
+    }
 
 	runCLI(client)
 }
@@ -184,6 +185,32 @@ func findAvailablePort() (int, error) {
 	return port, nil
 }
 
+func checkDirStatus(dir string) (exists bool, isEmpty bool, err error) {
+	f, err := os.Open(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Directory does not exist
+			return false, true, nil
+		}
+		// Some other error occurred while opening the directory
+		return false, false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1) // Try to read one entry
+	if err == io.EOF {
+		// Directory exists and is empty
+		return true, true, nil
+	}
+	if err != nil {
+		// Some other error occurred while reading the directory
+		return true, false, err
+	}
+
+	// Directory exists and is not empty
+	return true, false, nil
+}
+
 func runCLI(client *rpc.Client) {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Enter commands (get 'help' to see full options):")
@@ -194,6 +221,7 @@ func runCLI(client *rpc.Client) {
 		input := scanner.Text()
 
 		if input == "exit" {
+			
 			break
 		}
 
@@ -243,15 +271,14 @@ func runCLI(client *rpc.Client) {
 			} else {
 				fmt.Printf("%s\n%s\n", res.AcceptorInfo, res.ProposerInfo)
 			}
-		case "timeout":
-			var req node.TimeoutRequest
-			var res node.TimeoutResponse
-			if err := client.Call("Node.ToggleTimeout", &req, &res); err != nil {
-				fmt.Printf("Error Timeout: %v\n", err)
+		case "kill":
+			var req node.TerminateRequest
+			var res node.TerminateResponse
+			if err := client.Call("Node.Terminate", &req, &res); err != nil {
+				fmt.Printf("Error calling Terminate RPC method: %v\n", err)
 			} else {
-				fmt.Printf(" Timeout occurred!\n")
+				fmt.Println("Termination command sent to all nodes.")
 			}
-
 		case "help":
 			fmt.Println("Available commands:")
 			fmt.Println("  ping - send ping request to node")
@@ -260,7 +287,6 @@ func runCLI(client *rpc.Client) {
 			fmt.Println("  info - show info about node proposer and acceptor")
 			fmt.Println("  help - show this message")
 			fmt.Println("  exit - exit program")
-			fmt.Println("  timeout - stop time")
 		default:
 			fmt.Println("Unknown command:", input)
 		}
@@ -286,4 +312,22 @@ func clearDir(dir string) error {
 		}
 	}
 	return nil
+}
+func waitForTermination(client *rpc.Client) {
+    var healthCheckReq node.HealthCheckRequest
+    var healthCheckRes node.HealthCheckResponse
+
+    for {
+        if err := client.Call("Node.HealthCheck", &healthCheckReq, &healthCheckRes); err != nil {
+            fmt.Printf("Error checking health status: %v\n", err)
+            break
+        }
+
+        if healthCheckRes.Status != "OK" {
+            fmt.Println("All nodes terminated. Exiting.")
+            break
+        }
+
+        time.Sleep(1 * time.Second)
+    }
 }
