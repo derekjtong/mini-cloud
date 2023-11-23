@@ -88,7 +88,7 @@ func (p *Proposer) Propose(value string) error {
 	}
 	p.HighestAcceptedProposalNumber = proposalNumber
 	if p.OriginalRequest != p.Value {
-		fmt.Printf("%sconsensus achieved, but was not client value\n%s", Red, Reset)
+		fmt.Printf("%sconsensus achieved, but was not client value\n%s", Yellow, Reset)
 		return fmt.Errorf("consensus achieved, but was not client value")
 	}
 	return nil
