@@ -227,6 +227,19 @@ func runCLI(client *rpc.Client) {
 			} else {
 				fmt.Println("Write operation successful")
 			}
+        case "forcewrite":
+			if argument == "" {
+				fmt.Println("Please provide a string to write")
+				continue
+			}
+			var req node.WriteFileRequest
+			var res node.WriteFileResponse
+			req.Body = argument
+			if err := client.Call("Node.ForceWrite", &req, &res); err != nil {
+				fmt.Printf("Error calling RPC method: %v\n", err)
+			} else {
+				fmt.Println("Force write operation successful")
+			}
 		case "read":
 			var req node.ReadFileRequest
 			var res node.ReadFileResponse

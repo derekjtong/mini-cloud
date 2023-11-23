@@ -9,6 +9,7 @@ import (
 	"net/rpc"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/derekjtong/paxos/paxos"
 	"github.com/derekjtong/paxos/utils"
@@ -149,6 +150,34 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 	fmt.Printf("--------------------\n")
 	return nil
 }
+
+func (n *Node) ForceWrite(req *WriteFileRequest, res *WriteFileResponse) error {
+	fmt.Printf("[Node %d]: Client trying to write %s, running Paxos...\n", n.NodeID, req.Body)
+	fmt.Printf("--------------------\n")
+
+	const maxRetries = 5
+	const backoffDuration = 2 * time.Second
+
+	var err error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			fmt.Printf("[Node %d]: Retrying attempt %d/%d\n", n.NodeID, attempt, maxRetries)
+			time.Sleep(backoffDuration)
+		}
+
+		err = n.proposer.Propose(req.Body)
+		if err == nil {
+			fmt.Printf("[Node %d]: Paxos completed successfully\n", n.NodeID)
+			fmt.Printf("--------------------\n")
+			return nil
+		}
+	}
+
+	fmt.Printf("[Node %d]: Paxos failed after %d attempts: %v\n", n.NodeID, maxRetries, err)
+	fmt.Printf("--------------------\n")
+	return fmt.Errorf("could not achieve consensus after %d attempts: %v", maxRetries, err)
+}
+
 
 func (n *Node) writeFileToLocal(data string) error {
 	filePath := fmt.Sprintf("./node_data/node_data_%s.json", n.addr)
