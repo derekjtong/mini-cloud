@@ -139,7 +139,8 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 
 	err := n.proposer.Propose(req.Body)
 	if err != nil {
-		return fmt.Errorf("could not achieve consensus")
+		return err
+		// return fmt.Errorf("could not achieve consensus")
 	}
 
 	// REDUNDANT: Done by local instance of Acceptor
@@ -270,7 +271,9 @@ func (n *Node) Info(req *InfoRequest, res *InfoResponse) error {
 
 // RPC: Toggletimeout
 type TimeoutRequest struct{}
-type TimeoutResponse struct{}
+type TimeoutResponse struct {
+	IsTimeout bool
+}
 
 func (n *Node) ToggleTimeout(req *TimeoutRequest, res *TimeoutResponse) error {
 	if n.proposer.Timeout {
@@ -279,7 +282,13 @@ func (n *Node) ToggleTimeout(req *TimeoutRequest, res *TimeoutResponse) error {
 		n.proposer.Timeout = true
 	}
 
-	fmt.Printf("[Node %d]: Timeout occurred!\n", n.NodeID)
+	res.IsTimeout = n.proposer.Timeout
+	fmt.Printf("[Node %d]: Timeout ", n.NodeID)
+	if n.proposer.Timeout {
+		fmt.Printf("on\n")
+	} else {
+		fmt.Printf("off\n")
+	}
 	return nil
 }
 

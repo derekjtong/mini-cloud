@@ -223,7 +223,7 @@ func runCLI(client *rpc.Client) {
 			var res node.WriteFileResponse
 			req.Body = argument
 			if err := client.Call("Node.WriteFile", &req, &res); err != nil {
-				fmt.Printf("Error calling RPC method: %v\n", err)
+				fmt.Printf("Write operation failure: %v\n", err)
 			} else {
 				fmt.Println("Write operation successful")
 			}
@@ -236,7 +236,7 @@ func runCLI(client *rpc.Client) {
 			var res node.WriteFileResponse
 			req.Body = argument
 			if err := client.Call("Node.ForceWrite", &req, &res); err != nil {
-				fmt.Printf("Error calling RPC method: %v\n", err)
+				fmt.Printf("Force write operation failure: %v\n", err)
 			} else {
 				fmt.Println("Force write operation successful")
 			}
@@ -244,7 +244,7 @@ func runCLI(client *rpc.Client) {
 			var req node.ReadFileRequest
 			var res node.ReadFileResponse
 			if err := client.Call("Node.ReadFile", &req, &res); err != nil {
-				fmt.Printf("Error calling ReadFile RPC method: %v\n", err)
+				fmt.Printf("Read operation failure: %v\n", err)
 			} else {
 				fmt.Println("Data read from file:", res.Data)
 			}
@@ -260,9 +260,14 @@ func runCLI(client *rpc.Client) {
 			var req node.TimeoutRequest
 			var res node.TimeoutResponse
 			if err := client.Call("Node.ToggleTimeout", &req, &res); err != nil {
-				fmt.Printf("Error Timeout: %v\n", err)
+				fmt.Printf("Error toggling timeout: %v\n", err)
 			} else {
-				fmt.Printf(" Timeout occurred!\n")
+				fmt.Printf("Timeout ")
+				if res.IsTimeout {
+					fmt.Printf("on\n")
+				} else {
+					fmt.Printf("off\n")
+				}
 			}
 		case "stop":
 			var req node.StopRequest
