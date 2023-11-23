@@ -227,7 +227,7 @@ func runCLI(client *rpc.Client) {
 			} else {
 				fmt.Println("Write operation successful")
 			}
-        case "forcewrite":
+		case "forcewrite":
 			if argument == "" {
 				fmt.Println("Please provide a string to write")
 				continue
@@ -264,7 +264,18 @@ func runCLI(client *rpc.Client) {
 			} else {
 				fmt.Printf(" Timeout occurred!\n")
 			}
-
+		case "stop":
+			var req node.StopRequest
+			var res node.StopResponse
+			if err := client.Call("Node.ToggleStop", &req, &res); err != nil {
+				fmt.Printf("Error Stop: %v\n", err)
+			} else {
+				if res.IsStopped {
+					fmt.Printf("Node will stop responding to Paxos requests\n")
+				} else {
+					fmt.Printf("Node will respond to Paxos requests\n")
+				}
+			}
 		case "help":
 			fmt.Println("Available commands:")
 			fmt.Println("  ping - send ping request to node")

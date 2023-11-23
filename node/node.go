@@ -22,6 +22,7 @@ type Node struct {
 	NeighborNodes []string
 	proposer      *paxos.Proposer
 	acceptor      *paxos.Acceptor
+	stop          bool
 }
 
 func NewNode(nodeID int, addr string) (*Node, error) {
@@ -36,6 +37,7 @@ func NewNode(nodeID int, addr string) (*Node, error) {
 		rpcClients:    make(map[string]*rpc.Client),
 		NeighborNodes: make([]string, 0),
 		acceptor:      acceptor,
+		stop:          false,
 		// proposer initialized under SetNeighbors
 	}, nil
 }
@@ -178,7 +180,6 @@ func (n *Node) ForceWrite(req *WriteFileRequest, res *WriteFileResponse) error {
 	return fmt.Errorf("could not achieve consensus after %d attempts: %v", maxRetries, err)
 }
 
-
 func (n *Node) writeFileToLocal(data string) error {
 	filePath := fmt.Sprintf("./node_data/node_data_%s.json", n.addr)
 	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
@@ -223,6 +224,9 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 
 // RPC: Prepare
 func (n *Node) Prepare(req *paxos.PrepareRequest, res *paxos.PrepareResponse) error {
+	if n.stop {
+		return nil
+	}
 	fmt.Printf("    node %d: received - %#v\n", n.NodeID, req)
 	// fmt.Printf("    node %d: received prepare request from %d {proposal: %d}\n", n.NodeID, req.Id, req.Proposal)
 	*res = n.acceptor.Prepare(req.Proposal)
@@ -232,6 +236,9 @@ func (n *Node) Prepare(req *paxos.PrepareRequest, res *paxos.PrepareResponse) er
 
 // RPC: Accept
 func (n *Node) Accept(req *paxos.AcceptRequest, res *paxos.AcceptResponse) error {
+	if n.stop {
+		return nil
+	}
 	fmt.Printf("    node %d: received - %#v\n", n.NodeID, req)
 
 	// fmt.Printf("    node %d: received accept request from %d {Proposal: %d, Value=%s}\n", n.NodeID, req.Id, req.Proposal, req.Value)
@@ -266,12 +273,30 @@ type TimeoutRequest struct{}
 type TimeoutResponse struct{}
 
 func (n *Node) ToggleTimeout(req *TimeoutRequest, res *TimeoutResponse) error {
-	if n.proposer.Timeout == true {
+	if n.proposer.Timeout {
 		n.proposer.Timeout = false
 	} else {
 		n.proposer.Timeout = true
 	}
 
 	fmt.Printf("[Node %d]: Timeout occurred!\n", n.NodeID)
+	return nil
+}
+
+// RPC: Ping
+type StopRequest struct{}
+type StopResponse struct {
+	IsStopped bool
+}
+
+func (n *Node) ToggleStop(req *StopRequest, res *StopResponse) error {
+	n.stop = !n.stop
+	fmt.Printf("[Node %d]: Client toggled stop, ", n.NodeID)
+	if n.stop {
+		fmt.Printf("server will no longer respond to Paxos\n")
+	} else {
+		fmt.Printf("server will respond to Paxos\n")
+	}
+	res.IsStopped = n.stop
 	return nil
 }
