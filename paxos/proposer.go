@@ -15,6 +15,7 @@ type Proposer struct {
 	HighestAcceptedProposalNumber int
 	HighestAcceptedValue          string // Highest accepted value
 	Timeout                       bool
+	OriginalRequest               string
 }
 
 func NewProposer(id int, proposalNumber int, acceptors map[string]*rpc.Client) *Proposer {
@@ -28,7 +29,7 @@ func NewProposer(id int, proposalNumber int, acceptors map[string]*rpc.Client) *
 
 func (p *Proposer) Propose(value string) error {
 	fmt.Printf("---PAXOS---\n")
-
+	p.OriginalRequest = value
 	p.Value = value
 	proposalNumber := p.ProposalNumber + 1
 	p.ProposalNumber = proposalNumber
@@ -86,6 +87,10 @@ func (p *Proposer) Propose(value string) error {
 		return fmt.Errorf("failed to get majority in accept phase")
 	}
 	p.HighestAcceptedProposalNumber = proposalNumber
+	if p.OriginalRequest != p.Value {
+		fmt.Printf("%sconsensus achieved, but was not client value\n%s", Red, Reset)
+		return fmt.Errorf("consensus achieved, but was not client value")
+	}
 	return nil
 }
 
