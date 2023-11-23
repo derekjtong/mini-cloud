@@ -227,7 +227,7 @@ func (n *Node) Info(req *InfoRequest, res *InfoResponse) error {
 	// res.AcceptorInfo = fmt.Sprintf("%#v\n", n.acceptor)
 	// res.ProposerInfo = fmt.Sprintf("%#v\n", n.proposer)
 
-	res.AcceptorInfo = fmt.Sprintf("Acceptor={PromisedProposal:%d, AcceptedProposal:%d, AcceptedValue:%s}", n.acceptor.PromisedProposal, n.acceptor.AcceptedProposal, n.acceptor.AcceptedValue)
-	res.ProposerInfo = fmt.Sprintf("Proposer={ProposalNumber:%d, Value:%s, HighestAcceptedProposalNumber:%d, HighestAcceptedValue:%s}", n.proposer.ProposalNumber, n.proposer.Value, n.proposer.HighestAcceptedProposalNumber, n.proposer.HighestAcceptedValue)
+	res.AcceptorInfo = fmt.Sprintf("Acceptor={PromisedProposal:%d, AcceptedProposal:%d, AcceptedValue:\"%s\"}", n.acceptor.PromisedProposal, n.acceptor.AcceptedProposal, n.acceptor.AcceptedValue)
+	res.ProposerInfo = fmt.Sprintf("Proposer={ProposalNumber:%d, Value:\"%s\", HighestAcceptedProposalNumber:%d, HighestAcceptedValue:%s}", n.proposer.ProposalNumber, n.proposer.Value, n.proposer.HighestAcceptedProposalNumber, n.proposer.HighestAcceptedValue)
 	return nil
 }
