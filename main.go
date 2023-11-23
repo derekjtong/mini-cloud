@@ -5,6 +5,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"net/rpc"
 	"os"
@@ -57,6 +58,11 @@ func startClient() {
 	}
 
 	fmt.Printf("Connected to node %v!\n", response.NodeID)
+	if os.Args[1] == "kill" {
+        os.Setenv("TERMINATE", "true")
+        fmt.Println("TERMINATE signal sent. Exiting.")
+        os.Exit(0)
+    }
 
 	runCLI(client)
 }
@@ -197,6 +203,7 @@ func runCLI(client *rpc.Client) {
 		input := scanner.Text()
 
 		if input == "exit" {
+			
 			break
 		}
 
@@ -259,6 +266,13 @@ func runCLI(client *rpc.Client) {
 			} else {
 				fmt.Printf("%s\n%s\n", res.AcceptorInfo, res.ProposerInfo)
 			}
+		case "kill":
+			var req node.TerminateRequest
+			var res node.TerminateResponse
+			if err := client.Call("Node.Terminate", &req, &res); err != nil {
+				fmt.Printf("Error calling Terminate RPC method: %v\n", err)
+			} else {
+				fmt.Println("Termination command sent to all nodes.")
 		case "timeout":
 			var req node.TimeoutRequest
 			var res node.TimeoutResponse
@@ -292,7 +306,6 @@ func runCLI(client *rpc.Client) {
 			fmt.Println("  info - show info about node proposer and acceptor")
 			fmt.Println("  help - show this message")
 			fmt.Println("  exit - exit program")
-			fmt.Println("  timeout - stop time")
 		default:
 			fmt.Println("Unknown command:", input)
 		}
@@ -319,4 +332,22 @@ func clearDir(dir string) error {
 		}
 	}
 	return nil
+}
+func waitForTermination(client *rpc.Client) {
+    var healthCheckReq node.HealthCheckRequest
+    var healthCheckRes node.HealthCheckResponse
+
+    for {
+        if err := client.Call("Node.HealthCheck", &healthCheckReq, &healthCheckRes); err != nil {
+            fmt.Printf("Error checking health status: %v\n", err)
+            break
+        }
+
+        if healthCheckRes.Status != "OK" {
+            fmt.Println("All nodes terminated. Exiting.")
+            break
+        }
+
+        time.Sleep(1 * time.Second)
+    }
 }

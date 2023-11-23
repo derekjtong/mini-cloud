@@ -23,6 +23,7 @@ type Node struct {
 	NeighborNodes []string
 	proposer      *paxos.Proposer
 	acceptor      *paxos.Acceptor
+	terminated    bool
 	stop          bool
 }
 
@@ -113,6 +114,7 @@ func (n *Node) SetNeighbors(req *SetNeighborsRequest, res *SetNeighborsResponse)
 
 	// Initialize proposer
 	n.proposer = paxos.NewProposer(n.NodeID, n.NodeID, n.rpcClients)
+
 	return nil
 }
 
@@ -301,3 +303,33 @@ func (n *Node) ToggleStop(req *StopRequest, res *StopResponse) error {
 	res.IsStopped = n.stop
 	return nil
 }
+// RPC: Terminate
+type TerminateRequest struct{}
+type TerminateResponse struct{}
+
+func (n *Node) Terminate(req *TerminateRequest, res *TerminateResponse) error {
+    fmt.Printf("[Node %d]: Terminate method called\n", n.NodeID)
+
+    // Avoid repeated termination
+    if n.terminated {
+        return nil
+    }
+
+    // Set termination flag
+    n.terminated = true
+
+    // Only send Terminate RPC to neighbors
+    for neighborAddr, client := range n.rpcClients {
+        if neighborAddr != n.addr {
+            var terminateRequest TerminateRequest
+            var terminateResponse TerminateResponse
+            if err := client.Call("Node.Terminate", &terminateRequest, &terminateResponse); err != nil {
+                fmt.Printf("[Node %d]: Error calling Terminate RPC method to %s: %v\n", n.NodeID, neighborAddr, err)
+            }
+        }
+    }
+
+    os.Exit(0)
+    return nil
+}
+
