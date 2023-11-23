@@ -15,6 +15,7 @@ type Proposer struct {
 	HighestAcceptedProposalNumber int
 	HighestAcceptedValue          string // Highest accepted value
 	Timeout                       bool
+	OriginalRequest               string
 }
 
 func NewProposer(id int, proposalNumber int, acceptors map[string]*rpc.Client) *Proposer {
@@ -26,18 +27,18 @@ func NewProposer(id int, proposalNumber int, acceptors map[string]*rpc.Client) *
 	}
 }
 
+// Paxos
 func (p *Proposer) Propose(value string) error {
 	fmt.Printf("---PAXOS---\n")
-
+	p.OriginalRequest = value
 	p.Value = value
 	proposalNumber := p.ProposalNumber + 1
 	p.ProposalNumber = proposalNumber
 
-	fmt.Printf("------PHASE 1: PREPARE------\n")
 	// Phase 1: Prepare
+	fmt.Printf("------PHASE 1: PREPARE------\n")
 	fmt.Printf("Current proposal number: %d\n", p.ProposalNumber)
 	receivedPromises := 0
-	// p.HighestAcceptedProposalNumber = -1
 	p.HighestAcceptedValue = ""
 	for _, acceptor := range p.Acceptors {
 		response, err := p.sendPrepareRequest(acceptor, proposalNumber)
@@ -69,6 +70,7 @@ func (p *Proposer) Propose(value string) error {
 		time.Sleep(10 * time.Second)
 	}
 
+	// Phase 2: Accept
 	fmt.Printf("------PHASE 2: ACCEPT------\n")
 	fmt.Printf("Sending %s\n", p.Value)
 	acceptCount := 0
@@ -86,11 +88,14 @@ func (p *Proposer) Propose(value string) error {
 		return fmt.Errorf("failed to get majority in accept phase")
 	}
 	p.HighestAcceptedProposalNumber = proposalNumber
+	if p.OriginalRequest != p.Value {
+		fmt.Printf("%sconsensus achieved, but was not client value\n%s", Yellow, Reset)
+		return fmt.Errorf("consensus achieved, but was not client value")
+	}
 	return nil
 }
 
 func (p *Proposer) sendPrepareRequest(acceptor *rpc.Client, proposalNumber int) (*PrepareResponse, error) {
-	// TODO: Add timeout
 	request := PrepareRequest{
 		Id:       p.id,
 		Proposal: proposalNumber,
@@ -104,7 +109,6 @@ func (p *Proposer) sendPrepareRequest(acceptor *rpc.Client, proposalNumber int) 
 }
 
 func (p *Proposer) sendAcceptRequest(acceptor *rpc.Client, proposalNumber int, value string) (*AcceptResponse, error) {
-	// TODO: Add timeout
 	request := AcceptRequest{
 		Id:       p.id,
 		Proposal: proposalNumber,
@@ -113,7 +117,5 @@ func (p *Proposer) sendAcceptRequest(acceptor *rpc.Client, proposalNumber int, v
 	fmt.Printf("  node %d: sending  - %#v\n", p.id, request)
 	var response AcceptResponse
 	err := acceptor.Call("Node.Accept", request, &response)
-
-	// fmt.Printf("  node %d: received %#v\n", p.id, response)
 	return &response, err
 }

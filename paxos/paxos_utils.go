@@ -27,3 +27,11 @@ type AcceptResponse struct {
 	OK       bool
 	Proposal int
 }
+
+// Colors for terminal
+const (
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Red    = "\033[31m"
+	Reset  = "\033[0m"
+)

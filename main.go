@@ -22,8 +22,13 @@ type NodeIPs struct {
 }
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "client" {
-		startClient()
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "client":
+			startClient()
+		default:
+			fmt.Printf("Invalid arg")
+		}
 	} else {
 		startServer()
 	}
@@ -40,7 +45,7 @@ func startClient() {
 	fmt.Printf("Connecting to %s:%d...\n", IPAddress, Port)
 	client, err := rpc.Dial("tcp", fmt.Sprintf("%s:%d", IPAddress, Port))
 	if err != nil {
-		fmt.Printf("Error dialing RPC server:%v\n", err)
+		fmt.Printf("Error dialing RPC server: %v\n", err)
 		os.Exit(1)
 	}
 	defer client.Close()
@@ -52,7 +57,6 @@ func startClient() {
 		os.Exit(1)
 	}
 
-	// fmt.Printf("%v, connected!", response.Message)
 	fmt.Printf("Connected to node %v!\n", response.NodeID)
 	if os.Args[1] == "kill" {
         os.Setenv("TERMINATE", "true")
@@ -75,6 +79,7 @@ func startServer() {
 	}
 
 	var nodeAddrList []string
+
 	// Start nodes
 	if utils.MinimalStartUpLogging {
 		fmt.Printf("[SERVER]: Starting nodes\n")
@@ -106,6 +111,7 @@ func startServer() {
 			return
 		}
 	}
+
 	// Send list of IP addresses to nodes
 	if utils.MinimalStartUpLogging {
 		fmt.Printf("[SERVER]: Sending list of node IP addresses to each node\n")
@@ -162,6 +168,7 @@ func waitForServerReady(address string) error {
 	return fmt.Errorf("server at %s did not become ready afte %d attemps", address, maxRetries)
 }
 
+// Find available port on system
 func findAvailablePort() (int, error) {
 	// Find a free port
 	listener, err := net.Listen("tcp", ":0")
@@ -185,32 +192,7 @@ func findAvailablePort() (int, error) {
 	return port, nil
 }
 
-func checkDirStatus(dir string) (exists bool, isEmpty bool, err error) {
-	f, err := os.Open(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// Directory does not exist
-			return false, true, nil
-		}
-		// Some other error occurred while opening the directory
-		return false, false, err
-	}
-	defer f.Close()
-
-	_, err = f.Readdirnames(1) // Try to read one entry
-	if err == io.EOF {
-		// Directory exists and is empty
-		return true, true, nil
-	}
-	if err != nil {
-		// Some other error occurred while reading the directory
-		return true, false, err
-	}
-
-	// Directory exists and is not empty
-	return true, false, nil
-}
-
+// Client CLI
 func runCLI(client *rpc.Client) {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Enter commands (get 'help' to see full options):")
@@ -251,15 +233,28 @@ func runCLI(client *rpc.Client) {
 			var res node.WriteFileResponse
 			req.Body = argument
 			if err := client.Call("Node.WriteFile", &req, &res); err != nil {
-				fmt.Printf("Error calling RPC method: %v\n", err)
+				fmt.Printf("Write operation failure: %v\n", err)
 			} else {
 				fmt.Println("Write operation successful")
+			}
+		case "forcewrite":
+			if argument == "" {
+				fmt.Println("Please provide a string to write")
+				continue
+			}
+			var req node.WriteFileRequest
+			var res node.WriteFileResponse
+			req.Body = argument
+			if err := client.Call("Node.ForceWrite", &req, &res); err != nil {
+				fmt.Printf("Force write operation failure: %v\n", err)
+			} else {
+				fmt.Println("Force write operation successful")
 			}
 		case "read":
 			var req node.ReadFileRequest
 			var res node.ReadFileResponse
 			if err := client.Call("Node.ReadFile", &req, &res); err != nil {
-				fmt.Printf("Error calling ReadFile RPC method: %v\n", err)
+				fmt.Printf("Read operation failure: %v\n", err)
 			} else {
 				fmt.Println("Data read from file:", res.Data)
 			}
@@ -278,6 +273,30 @@ func runCLI(client *rpc.Client) {
 				fmt.Printf("Error calling Terminate RPC method: %v\n", err)
 			} else {
 				fmt.Println("Termination command sent to all nodes.")
+		case "timeout":
+			var req node.TimeoutRequest
+			var res node.TimeoutResponse
+			if err := client.Call("Node.ToggleTimeout", &req, &res); err != nil {
+				fmt.Printf("Error toggling timeout: %v\n", err)
+			} else {
+				fmt.Printf("Timeout ")
+				if res.IsTimeout {
+					fmt.Printf("on\n")
+				} else {
+					fmt.Printf("off\n")
+				}
+			}
+		case "stop":
+			var req node.StopRequest
+			var res node.StopResponse
+			if err := client.Call("Node.ToggleStop", &req, &res); err != nil {
+				fmt.Printf("Error Stop: %v\n", err)
+			} else {
+				if res.IsStopped {
+					fmt.Printf("Node will stop responding to Paxos requests\n")
+				} else {
+					fmt.Printf("Node will respond to Paxos requests\n")
+				}
 			}
 		case "help":
 			fmt.Println("Available commands:")
@@ -293,6 +312,7 @@ func runCLI(client *rpc.Client) {
 	}
 }
 
+// Clear node_data directory
 func clearDir(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {

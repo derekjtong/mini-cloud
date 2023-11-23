@@ -5,10 +5,12 @@ package node
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/rpc"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/derekjtong/paxos/paxos"
 	"github.com/derekjtong/paxos/utils"
@@ -21,7 +23,8 @@ type Node struct {
 	NeighborNodes []string
 	proposer      *paxos.Proposer
 	acceptor      *paxos.Acceptor
-	terminated bool
+	terminated    bool
+	stop          bool
 }
 
 func NewNode(nodeID int, addr string) (*Node, error) {
@@ -36,6 +39,7 @@ func NewNode(nodeID int, addr string) (*Node, error) {
 		rpcClients:    make(map[string]*rpc.Client),
 		NeighborNodes: make([]string, 0),
 		acceptor:      acceptor,
+		stop:          false,
 		// proposer initialized under SetNeighbors
 	}, nil
 }
@@ -138,23 +142,45 @@ func (n *Node) WriteFile(req *WriteFileRequest, res *WriteFileResponse) error {
 
 	err := n.proposer.Propose(req.Body)
 	if err != nil {
-		return fmt.Errorf("could not achieve consensus")
+		return err
 	}
 
-	// REDUNDANT: Done by local instance of Acceptor
-	// Write Locally
-	// if err := n.writeFileToLocal(n.proposer.Value); err != nil {
-	// 	return fmt.Errorf("error writing file locally %v", err)
-	// }
-	// fmt.Printf("[Node %d]: PROPOSER - Wrote %s (proposer value)\n", n.NodeID, n.proposer.Value)
 	fmt.Printf("[Node %d]: Paxos completed\n", n.NodeID)
 	fmt.Printf("--------------------\n")
 	return nil
 }
 
+// RPC: ForceWrite - WriteFile with retry
+func (n *Node) ForceWrite(req *WriteFileRequest, res *WriteFileResponse) error {
+	fmt.Printf("[Node %d]: Client trying to write %s, running Paxos...\n", n.NodeID, req.Body)
+	fmt.Printf("--------------------\n")
+
+	const maxRetries = 5
+	var err error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			fmt.Printf("[Node %d]: Retrying attempt %d/%d\n", n.NodeID, attempt, maxRetries)
+			// Randomized delay
+			r := rand.Intn(5-1+1) + 1
+			time.Sleep(time.Duration(r) * time.Second)
+		}
+
+		err = n.proposer.Propose(req.Body)
+		if err == nil {
+			fmt.Printf("[Node %d]: Paxos completed successfully\n", n.NodeID)
+			fmt.Printf("--------------------\n")
+			return nil
+		}
+	}
+
+	fmt.Printf("[Node %d]: Paxos failed after %d attempts: %v\n", n.NodeID, maxRetries, err)
+	fmt.Printf("--------------------\n")
+	return fmt.Errorf("could not achieve consensus after %d attempts: %v", maxRetries, err)
+}
+
 func (n *Node) writeFileToLocal(data string) error {
 	filePath := fmt.Sprintf("./node_data/node_data_%s.json", n.addr)
-	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	// file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666) //Append
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666) // Overwrite
 	if err != nil {
 		return err
@@ -196,18 +222,20 @@ func (n *Node) ReadFile(req *ReadFileRequest, res *ReadFileResponse) error {
 
 // RPC: Prepare
 func (n *Node) Prepare(req *paxos.PrepareRequest, res *paxos.PrepareResponse) error {
+	if n.stop {
+		return nil
+	}
 	fmt.Printf("    node %d: received - %#v\n", n.NodeID, req)
-	// fmt.Printf("    node %d: received prepare request from %d {proposal: %d}\n", n.NodeID, req.Id, req.Proposal)
 	*res = n.acceptor.Prepare(req.Proposal)
-	// fmt.Printf("[Node %d]: Completed prepare\n", n.NodeID)
 	return nil
 }
 
 // RPC: Accept
 func (n *Node) Accept(req *paxos.AcceptRequest, res *paxos.AcceptResponse) error {
+	if n.stop {
+		return nil
+	}
 	fmt.Printf("    node %d: received - %#v\n", n.NodeID, req)
-
-	// fmt.Printf("    node %d: received accept request from %d {Proposal: %d, Value=%s}\n", n.NodeID, req.Id, req.Proposal, req.Value)
 
 	*res = n.acceptor.Accept(req.Proposal, req.Value)
 	n.acceptor.AcceptedValue = req.Value
@@ -218,7 +246,7 @@ func (n *Node) Accept(req *paxos.AcceptRequest, res *paxos.AcceptResponse) error
 	return nil
 }
 
-// RPC: info
+// RPC: Info
 type InfoRequest struct{}
 type InfoResponse struct {
 	ProposerInfo string
@@ -226,6 +254,7 @@ type InfoResponse struct {
 }
 
 func (n *Node) Info(req *InfoRequest, res *InfoResponse) error {
+	// Not used because too verbose: will print out *rpc.Clients map
 	// res.AcceptorInfo = fmt.Sprintf("%#v\n", n.acceptor)
 	// res.ProposerInfo = fmt.Sprintf("%#v\n", n.proposer)
 
@@ -236,16 +265,42 @@ func (n *Node) Info(req *InfoRequest, res *InfoResponse) error {
 
 // RPC: Toggletimeout
 type TimeoutRequest struct{}
-type TimeoutResponse struct{}
+type TimeoutResponse struct {
+	IsTimeout bool
+}
 
 func (n *Node) ToggleTimeout(req *TimeoutRequest, res *TimeoutResponse) error {
-	if n.proposer.Timeout == true {
+	if n.proposer.Timeout {
 		n.proposer.Timeout = false
 	} else {
 		n.proposer.Timeout = true
 	}
 
-	fmt.Printf("[Node %d]: Timeout occurred!\n", n.NodeID)
+	res.IsTimeout = n.proposer.Timeout
+	fmt.Printf("[Node %d]: Timeout ", n.NodeID)
+	if n.proposer.Timeout {
+		fmt.Printf("on\n")
+	} else {
+		fmt.Printf("off\n")
+	}
+	return nil
+}
+
+// RPC: Ping
+type StopRequest struct{}
+type StopResponse struct {
+	IsStopped bool
+}
+
+func (n *Node) ToggleStop(req *StopRequest, res *StopResponse) error {
+	n.stop = !n.stop
+	fmt.Printf("[Node %d]: Client toggled stop, ", n.NodeID)
+	if n.stop {
+		fmt.Printf("server will no longer respond to Paxos\n")
+	} else {
+		fmt.Printf("server will respond to Paxos\n")
+	}
+	res.IsStopped = n.stop
 	return nil
 }
 // RPC: Terminate
