@@ -5,7 +5,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"net"
 	"net/rpc"
 	"os"
@@ -22,8 +21,13 @@ type NodeIPs struct {
 }
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "client" {
-		startClient()
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "client":
+			startClient()
+		case "sim1":
+			fmt.Printf("Sim 1\n")
+		}
 	} else {
 		startServer()
 	}
@@ -178,32 +182,6 @@ func findAvailablePort() (int, error) {
 	}
 
 	return port, nil
-}
-
-func checkDirStatus(dir string) (exists bool, isEmpty bool, err error) {
-	f, err := os.Open(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// Directory does not exist
-			return false, true, nil
-		}
-		// Some other error occurred while opening the directory
-		return false, false, err
-	}
-	defer f.Close()
-
-	_, err = f.Readdirnames(1) // Try to read one entry
-	if err == io.EOF {
-		// Directory exists and is empty
-		return true, true, nil
-	}
-	if err != nil {
-		// Some other error occurred while reading the directory
-		return true, false, err
-	}
-
-	// Directory exists and is not empty
-	return true, false, nil
 }
 
 func runCLI(client *rpc.Client) {
