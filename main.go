@@ -16,10 +16,6 @@ import (
 	"github.com/derekjtong/mini-cloud/utils"
 )
 
-type NodeIPs struct {
-	IPs []string
-}
-
 func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
@@ -31,7 +27,6 @@ func main() {
 	} else {
 		startServer()
 	}
-
 }
 
 func startClient() {
