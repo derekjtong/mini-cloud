@@ -66,6 +66,11 @@ func startServer() {
 
 	if utils.ClearNodeDataOnStart {
 		fmt.Println("[SERVER]: Clearing node_data directory")
+		// Create directory if it doesn't exist
+		if err := os.MkdirAll("./node_data", 0755); err != nil {
+			fmt.Printf("Error creating node_data directory: %v\n", err)
+			return
+		}
 		if err := clearDir("./node_data"); err != nil {
 			fmt.Printf("Error clearing node_data directory: %v\n", err)
 			return
